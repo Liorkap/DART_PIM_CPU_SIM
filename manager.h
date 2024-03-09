@@ -121,7 +121,7 @@ public:
     Manager(CPUMinimizers, vector<Read>);
     void handleReads(); // handling the reads
     void handlePendingReads(); // handling the pending WF jobs
-    int wagnerFischerAffineGap(const string& S1, const string& S2, int* score, int wop=1, int wex=1, int wsub=1);
+    int wagnerFischerAffineGap(const string& S1, const string& S2, int* score, bool backtracking, int wop=1, int wex=1, int wsub=1);
     void printReads();
     void printCPUMinimizers();
 };

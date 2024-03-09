@@ -41,10 +41,6 @@ void Heap::insert(Kmer* value) {
         std::swap(elements[index], elements[parent]);
         index = parent;
     }
-}
-
-void Heap::eraseLastMin() {
-    elements.pop_back();
     heapify(0);
 }
 
@@ -142,7 +138,7 @@ void ReadMinimizer::print(){
 Read::Read(string readSeq) {
     vector<Kmer*> readMinimizers = createMinimizers(readSeq);
     this->seq = readSeq;
-    
+
     for(Kmer* minimizer : readMinimizers){
         ReadMinimizer readMinimizer(*minimizer);
         this->minimizers.push_back(readMinimizer);
@@ -263,7 +259,7 @@ void Manager::handleReads(){
                         numRunningJobs++;
                         runningJobsMtx.unlock();
 
-                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score, 1, 1, 1);
+                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score, true, 1, 1, 1);
                         WFJob.detach();
                     }
                     // if not, add to pending jobs and call the pending jobs handler
@@ -304,15 +300,20 @@ void Manager::handlePendingReads(){
             numRunningJobs++;
             runningJobsMtx.unlock();
 
-            thread WFJob(&Manager::wagnerFischerAffineGap, this, nextRead.readSeq,  nextRead.refSeq, nextRead.score, 1, 1, 1);
+            thread WFJob(&Manager::wagnerFischerAffineGap, this, nextRead.readSeq,  nextRead.refSeq, nextRead.score,
+                         true, 1, 1, 1);
             WFJob.detach();
         }
     }
 }
 
-int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* score, int wop, int wex, int wsub) {
+int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* score,  bool backtraching, int wop, int wex, int wsub) {
     int n = S1.size();
     int m = S2.size();
+    vector<int> contenders;
+    int minCon = 0;
+    string seq1_align = "";
+    string seq2_align = "";
 
     // Initialize matrices D, M1, and M2 with appropriate dimensions
     vector<vector<int>> D(n + 1, vector<int>(m + 1, 0));
@@ -345,8 +346,40 @@ int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* sco
     // Return the optimal alignment score
     *score = D[n][m];
 
+    // find the alignment of the read according to sub reference sequence
+    if(backtraching) {
+        int i = n, j = m;
+        while (i > 0 && j > 0 && D[i][j] > 0) {
+            contenders = {D[i - 1][j - 1], D[i - 1][j], D[i][j - 1]};
+            minCon = *(std::min_element(contenders.begin(), contenders.end()));
+
+            if (minCon == contenders[0]) {
+                if (S1[i - 1] != S2[j - 1]) {
+                    seq1_align += S2[i - 1];
+                    seq2_align += S2[j - 1];
+                } else {
+                    seq1_align += S1[i - 1];
+                    seq2_align += S2[j - 1];
+                }
+                i -= 1;
+                j -= 1;
+            } else if (minCon == contenders[1]) {
+                seq1_align += S1[i - 1];
+                seq2_align += "-";
+                i -= 1;
+            } else {
+                seq1_align += "-";
+                seq2_align += S2[j - 1];
+                j -= 1;
+            }
+
+        }
+        std::reverse(seq1_align.begin(), seq1_align.end());
+        std::reverse(seq2_align.begin(), seq2_align.end());
+    }
+
     runningJobsMtx.lock();
-    numRunningJobs--; 
+    numRunningJobs--;
     runningJobsMtx.unlock();
 
     return *score;
@@ -418,7 +451,7 @@ string buildRandomRefSegment(string minimizer){
 
 CPUMinimizers getRandomCPUMinimizers(vector<Read> reads){
     CPUMinimizers randCPUMinimizers;
-    
+
 
     // Generate a random number of reads to select
     int numReads = rand() % reads.size() +1;
@@ -502,7 +535,7 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
         Read read(line);
         reads.push_back(read);
 
-        
+
 
         //skip two lines
         for(int i = 0; i < 3; i++){
@@ -526,15 +559,17 @@ int main(int argc, char* argv[]) {
     bool readsFileOpen = false;
     bool minsFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
+    argc = 2;
+    (argv[1])= "-rand";
 
     if(argc == 2 && string(argv[1]) == "-rand"){
-        
+
 
         srand(time(0));
 
         reads = getRandomReads(numOfReads);
         CPUMins = getRandomCPUMinimizers(reads);
-        
+
     }
     else if(argc == 5 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins"){
         readsFile = ifstream(argv[2]);
@@ -583,7 +618,7 @@ int main(int argc, char* argv[]) {
     if(minsFileOpen){
         minsFile.close();
     }
-    
+
     return 0;
 }
 
