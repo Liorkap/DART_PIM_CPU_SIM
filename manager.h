@@ -25,6 +25,7 @@
 #include <fstream>
 #include <mutex>
 #include <sstream>
+#include <climits>
 
 
 using namespace std;
