@@ -12,6 +12,7 @@
 #define ERROR_THRESHOLD            3
 #define REF_SUB_SEQUENCE_LENGTH    READ_LENGTH + 2 * ERROR_THRESHOLD
 #define REF_GENOME_LENGTH          3000000000
+#define UINT_MAX (INT_MAX * 2U + 1U)
 
 #include <iostream>
 #include <vector>
@@ -25,7 +26,6 @@
 #include <fstream>
 #include <mutex>
 #include <sstream>
-#include <limits>
 
 
 using namespace std;
