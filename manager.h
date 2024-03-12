@@ -24,6 +24,8 @@
 #include <ctime>
 #include <fstream>
 #include <mutex>
+#include <sstream>
+
 
 using namespace std;
 
@@ -84,6 +86,7 @@ public:
 
     Read(string);
     vector<Kmer*> createMinimizers(const string &seq);
+    std::vector<Kmer> findMinimizers(string s);
     void print();
 };
 

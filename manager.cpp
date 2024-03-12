@@ -131,16 +131,43 @@ void ReadMinimizer::print(){
 
 
 
+void convertSeq2Nums(string& seq){
+    for(int i = 0; i < seq.size(); i++){
+        switch(seq[i]){
+            case 'A':
+            case 'a':
+                seq[i] = '0' + A;
+                break;
+            case 'C':
+            case 'c':
+                seq[i] = '0' + C;
+                break;
+            case 'G':
+            case 'g':
+                seq[i] = '0' + G;
+                break;
+            case 'T':
+            case 't':
+                seq[i] = '0' + T;
+                break;
+            case 'N':   // Unknown letter, could be every letter
+                seq[i] = '0' + (rand() % 4);
+            default:
+            std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
+        }
+    }
+}
 
 /*============================================= Read ===============================================*/
 /*==================================================================================================*/
 
 Read::Read(string readSeq) {
-    vector<Kmer*> readMinimizers = createMinimizers(readSeq);
+    vector<Kmer> readMinimizers = findMinimizers(readSeq);
+    convertSeq2Nums(readSeq);
     this->seq = readSeq;
 
-    for(Kmer* minimizer : readMinimizers){
-        ReadMinimizer readMinimizer(*minimizer);
+    for(Kmer minimizer : readMinimizers){
+        ReadMinimizer readMinimizer(minimizer);
         this->minimizers.push_back(readMinimizer);
     }
 }
@@ -181,6 +208,92 @@ std::vector<Kmer*> Read::createMinimizers(const string &seq) {
     return outMinimizers;
 }
 
+
+uint32_t invertibleHash(uint32_t x){
+    uint32_t m = UINT_MAX;
+    x = (~x + (x << 21)) & m;
+    x = x ^ (x >> 24);
+    x = (x + (x << 3) + (x << 8)) & m;
+    x = x ^ (x >> 14);
+    x = (x + (x << 2) + (x << 4)) & m;
+    x = x ^ (x >> 28);
+    x = (x + (x << 31)) & m;
+    return x;
+}
+/**
+ * Phi for a single character
+ */
+uint32_t RHO[26] = {0, 0, 1, 0, 0, 0, 2, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 3, 0, 0, 0, 0, 0, 0};
+/**
+ * Conversion from k-mer to dtype
+ * @param s k-mer above (A, C, G, T)
+ * @return hash
+ */
+uint32_t rho(std::string s){
+    uint32_t out = 0;
+    for(uint32_t i = 0; i < KMER_LENGTH; i++){
+        out += RHO[s[i] - 'A'] << (2 * (KMER_LENGTH - i - 1));
+    }
+    return out;
+}
+/**
+ * Hashing function on k-mers
+ * @param s k-mer above (A, C, G, T)
+ * @return hash
+ */
+uint32_t phi(std::string s) {
+    return invertibleHash(rho(s));
+}
+
+std::vector<Kmer> Read::findMinimizers(string s) {
+
+    std::map<uint32_t, std::vector<uint32_t> > minimizers;
+    std::vector<Kmer> returnedMinimizers;
+
+    // Fill the buffer with the first w values
+    std::vector<uint32_t> buffer(WINDOW_SIZE, 0);
+    for(uint32_t i = 0; i < WINDOW_SIZE; i++) buffer[i] = phi(s.substr(i, KMER_LENGTH));
+
+    uint32_t prev_selection = UINT_MAX;
+    uint32_t prev_value = UINT_MAX;
+    for(uint32_t i = 0; i < s.size() - (KMER_LENGTH - 1) - (WINDOW_SIZE - 1); i++){
+
+        // Choose the k-mer with the lowest value in the buffer
+        uint32_t iter = 0;
+        for(uint32_t j = 1; j < WINDOW_SIZE; j++){
+            if(buffer[j] < buffer[iter]){
+                iter = j;
+            }
+        }
+        uint32_t idx = i + ((iter) - (i % WINDOW_SIZE) + WINDOW_SIZE) % WINDOW_SIZE;
+        uint32_t hash = buffer[iter];
+        if(idx != prev_selection && (i == 0 || prev_selection == i - 1 || hash < prev_value)){
+            uint32_t val = rho(s.substr(idx, KMER_LENGTH));
+            if(minimizers.find(val) == minimizers.end()) minimizers[val] = std::vector<uint32_t>();
+            minimizers[val].push_back(idx);
+
+            prev_selection = idx;
+            prev_value = hash;
+        }
+
+        buffer[i % WINDOW_SIZE] = phi(s.substr(i + WINDOW_SIZE, KMER_LENGTH));
+
+    }
+    // convert map of minimizers to vector
+    for (const auto& pair : minimizers) {
+        uint32_t minSeq = pair.first;
+        const std::vector<uint32_t> &locations = pair.second;
+        for (const uint32_t& minLocation : locations){
+            Kmer kmer((int)(minLocation), to_string(minSeq));
+            returnedMinimizers.push_back(kmer);
+        }
+    }
+    return returnedMinimizers;
+
+}
+
 void Read::print(){
     std::cout << "--------------Printing Read Data--------------" << endl;
     std::cout << "Read Sequence: " << seq << endl;
@@ -190,6 +303,7 @@ void Read::print(){
     }
     std::cout << "----------------------------------------------" << endl;
 }
+
 
 /*==================================================================================================*/
 /*==================================================================================================*/
@@ -250,7 +364,7 @@ void Manager::handleReads(){
                 auto refMinimizer = CPUMins[i];
                 if(refMinimizer.minimizer.kmerSeq == readMinimizer.minimizer.kmerSeq){ // checking if its a CPU minimizer
                     string refSeq;
-                    // get the sub reference seqment to send to WF
+                    // get the sub reference segment to send to WF
                     readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
                     // if there is a slot for a new WF job, send it
                     if(numRunningJobs < MAX_RUNNING_JOBS){
@@ -374,6 +488,7 @@ int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* sco
             }
 
         }
+
         std::reverse(seq1_align.begin(), seq1_align.end());
         std::reverse(seq2_align.begin(), seq2_align.end());
     }
@@ -502,26 +617,6 @@ void print_help(){
     std::cout << "------------------------------------------------------------------------------------------------------------" << endl;
 }
 
-void convertSeq2Nums(string& seq){
-    for(int i = 0; i < seq.size(); i++){
-        switch(seq[i]){
-            case 'A':
-                seq[i] = '0' + A;
-                break;
-            case 'C':
-                seq[i] = '0' + C;
-                break;
-            case 'G':
-                seq[i] = '0' + G;
-                break;
-            case 'T':
-                seq[i] = '0' + T;
-                break;
-            default:
-                std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
-        }
-    }
-}
 
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     string line;
@@ -531,11 +626,9 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
         return;
     }
     while(getline(readsFile, line)){
-        convertSeq2Nums(line);
+        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
         Read read(line);
         reads.push_back(read);
-
-
 
         //skip two lines
         for(int i = 0; i < 3; i++){
@@ -546,8 +639,23 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     }
 }
 
-void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins){
-    //TODO
+void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
+    string line;
+    string refSegment;
+    string kmerSeq;
+    string position;
+
+    while (getline(minsFile, line)) {
+        stringstream lineStream(line);
+        getline(lineStream, kmerSeq , ',');
+        getline(lineStream, position, ',');
+        getline(lineStream, refSegment, ',');
+
+        Kmer minimizer(stoi(position),kmerSeq);
+        convertSeq2Nums(refSegment);
+        RefGenomeMinimizer row(minimizer, refSegment);
+        CPUMins.push_back(row);
+    }
 }
 
 
@@ -559,17 +667,13 @@ int main(int argc, char* argv[]) {
     bool readsFileOpen = false;
     bool minsFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
-    argc = 2;
-    (argv[1])= "-rand";
+
 
     if(argc == 2 && string(argv[1]) == "-rand"){
-
-
         srand(time(0));
 
         reads = getRandomReads(numOfReads);
         CPUMins = getRandomCPUMinimizers(reads);
-
     }
     else if(argc == 5 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins"){
         readsFile = ifstream(argv[2]);
