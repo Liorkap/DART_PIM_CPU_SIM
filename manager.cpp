@@ -150,10 +150,11 @@ void convertSeq2Nums(string& seq){
             case 't':
                 seq[i] = '0' + T;
                 break;
-            case 'N':   // Unknown letter, could be every letter
-                seq[i] = '0' + (rand() % 4);
+            //case 'N':   // Unknown letter, could be every letter
+             //   seq[i] = '0' + (rand() % 4);
             default:
-            std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
+                seq[i] = '0' + (rand() % 4);
+            //std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
         }
     }
 }
@@ -707,7 +708,7 @@ int main(int argc, char* argv[]) {
 
     Manager manager(CPUMins, reads);
 
-    manager.printCPUMinimizers();
+    //manager.printCPUMinimizers();
 
     manager.handleReads();
 
