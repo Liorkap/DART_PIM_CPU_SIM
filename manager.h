@@ -46,7 +46,6 @@ public:
     void heapify(size_t);
     Heap(const std::vector<Kmer*>&);
     void insert(Kmer*);
-    void eraseLastMin();
     Kmer* minElement();
     static bool compareMinimizers(const Kmer*, const Kmer*);
 };
@@ -73,6 +72,8 @@ public:
     Kmer minimizer; // Position is relative to the read. 
     int score;
     int readPotentialLocation;
+    string refSubSeq;
+    string mapping;
 
     ReadMinimizer(Kmer);
     void print();
@@ -120,12 +121,14 @@ public:
     vector<Read>        reads; // Reads to handle
     deque<PendingJob>   pendingJobsForWF; // These are the pending WF jobs that couldn't be scheduled and will be scheduled when possible. (too many parallel threads)
     int                 numRunningJobs; // Holds the current number of WF running threads
-    mutex               runningJobsMtx; // The WF function reduces the number of running threads when its done. This is a shared variable across all WF jobs, protecting it with mutex. 
+    mutex               runningJobsMtx; // The WF function reduces the number of running threads when its done. This is a shared variable across all WF jobs, protecting it with mutex.
+    string              genome;         // the reconstructed genome
 
     Manager(CPUMinimizers, vector<Read>);
     void handleReads(); // handling the reads
     void handlePendingReads(); // handling the pending WF jobs
-    int wagnerFischerAffineGap(const string& S1, const string& S2, int* score, bool backtracking, int wop=1, int wex=1, int wsub=1);
+    void wagnerFischerAffineGap(const string& S1, const string& S2, int* score, string* readMapping, bool backtracking, int wop=1, int wex=1, int wsub=1);
+    void reconstructGenome();
     void printReads();
     void printCPUMinimizers();
 };

@@ -123,6 +123,9 @@ void ReadMinimizer::print(){
     std::cout << "---------------" << endl;
 }
 
+
+
+
 /*==================================================================================================*/
 /*==================================================================================================*/
 
@@ -363,10 +366,12 @@ void Manager::handleReads(){
             // go over the CPU minimizers and check if this minimizer is there
             for(int i = 0; i < CPUMins.size(); i++){
                 auto refMinimizer = CPUMins[i];
+
                 if(refMinimizer.minimizer.kmerSeq == readMinimizer.minimizer.kmerSeq){ // checking if its a CPU minimizer
                     string refSeq;
                     // get the sub reference segment to send to WF
-                    readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
+                    readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &readMinimizer.refSubSeq);
+                    readMinimizer.refSubSeq = refSeq;
                     // if there is a slot for a new WF job, send it
                     if(numRunningJobs < MAX_RUNNING_JOBS){
 
@@ -374,7 +379,9 @@ void Manager::handleReads(){
                         numRunningJobs++;
                         runningJobsMtx.unlock();
 
-                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score, true, 1, 1, 1);
+                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
+                                     &readMinimizer.mapping, false, 1, 1, 1);
+
                         WFJob.detach();
                     }
                     // if not, add to pending jobs and call the pending jobs handler
@@ -402,8 +409,10 @@ void Manager::handleReads(){
     }
 }
 
+
 void Manager::handlePendingReads(){
     // while we have pending WF jobs
+    string readMapping = "";
     while(pendingJobsForWF.size() > 0){
         //check if there is a free slot to run a job
         if(numRunningJobs < MAX_RUNNING_JOBS){
@@ -416,13 +425,30 @@ void Manager::handlePendingReads(){
             runningJobsMtx.unlock();
 
             thread WFJob(&Manager::wagnerFischerAffineGap, this, nextRead.readSeq,  nextRead.refSeq, nextRead.score,
-                         true, 1, 1, 1);
+                         &readMapping, false, 1, 1, 1);
             WFJob.detach();
         }
     }
 }
 
-int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* score,  bool backtraching, int wop, int wex, int wsub) {
+void Manager::reconstructGenome() {
+    int minScore = REF_SUB_SEQUENCE_LENGTH;
+    ReadMinimizer minReadMinimizer(Kmer(0,""));
+    for(Read& read : reads) {
+        for(ReadMinimizer& readMinimizer : read.minimizers){
+            if (readMinimizer.score < minScore) {
+                minScore = readMinimizer.score;
+                ReadMinimizer minReadMinimizer(readMinimizer);
+            }
+        }
+        minScore = REF_SUB_SEQUENCE_LENGTH;
+        wagnerFischerAffineGap(read.seq, minReadMinimizer.refSubSeq,&minReadMinimizer.score,
+                               &minReadMinimizer.mapping,true,1,1,1);
+        genome.replace(minReadMinimizer.readPotentialLocation, READ_LENGTH,minReadMinimizer.mapping);
+    }
+}
+
+void Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* score, string* readMapping, bool backtraching, int wop, int wex, int wsub) {
     int n = S1.size();
     int m = S2.size();
     vector<int> contenders;
@@ -492,13 +518,12 @@ int Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* sco
 
         std::reverse(seq1_align.begin(), seq1_align.end());
         std::reverse(seq2_align.begin(), seq2_align.end());
+        *readMapping = seq1_align;
     }
 
     runningJobsMtx.lock();
     numRunningJobs--;
     runningJobsMtx.unlock();
-
-    return *score;
 }
 
 void Manager::printCPUMinimizers(){
@@ -669,7 +694,6 @@ int main(int argc, char* argv[]) {
     bool minsFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
 
-
     if(argc == 2 && string(argv[1]) == "-rand"){
         srand(time(0));
 
@@ -713,6 +737,8 @@ int main(int argc, char* argv[]) {
     manager.handleReads();
 
     manager.printReads();
+
+    manager.reconstructGenome();
 
 
 
