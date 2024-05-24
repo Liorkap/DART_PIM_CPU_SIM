@@ -35,15 +35,20 @@ int main(){
     }
 
     if(!writeFile.is_open()) {
-        perror("cant open file");
+        perror("cant open write file");
+    }
+
+    if(!readFile.is_open()) {
+        perror("cant open read file");
     }
 
     for(int affine_it = 0; affine_it < NUM_AFFINE; affine_it++){
         for(int linear_it = 0; linear_it < NUM_LINEAR; linear_it++) {
             std::cout << "writing for " << linear_it << " linear iteration" << std::endl;
             // write data to mem (read + minimizers)
-            for(int write_it = 0; write_it < NUM_WRITES_EACH_LNEAR; write_it++)
-            writeFile.write(writeData, WRITE_SIZE);
+            for(int write_it = 0; write_it < NUM_WRITES_EACH_LNEAR; write_it++){
+                writeFile.write(writeData, WRITE_SIZE);
+            }
 
             std::cout << "sending cmds for " << linear_it << " linear iteration" << std::endl;
             // linear computation (sending commands)
