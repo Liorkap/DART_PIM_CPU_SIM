@@ -764,10 +764,15 @@ int main(int argc, char* argv[]) {
         }
 
         getReadsFromFile(readsFile, reads);
+        cout << "done getReadsFromFile";
 
         getCPUMinsFromFile(minsFile, CPUMins);
+        cout << "done getCPUMinsFromFile";
+
 
         getReadsMapFromFile(pimResultFile, PIMResults);
+        cout << "done getReadsMapFromFile";
+
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
         print_help();
@@ -785,6 +790,7 @@ int main(int argc, char* argv[]) {
     //manager.printCPUMinimizers();
 
     manager.handleReads();
+    cout << "done handleReads";
 
     manager.printReads();
 
