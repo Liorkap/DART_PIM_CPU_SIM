@@ -115,15 +115,23 @@ void RefGenomeMinimizer::print(){
 ReadMinimizer::ReadMinimizer(Kmer minimizer) : minimizer(minimizer) {}
 
 void ReadMinimizer::print(){
-    std::cout << "---------------" << endl;
-    std::cout << "minimizer: " << minimizer.kmerSeq << endl;
-    std::cout << "minimizer position (in read): " << minimizer.position << endl;
-    std::cout << "read potential location: " << readPotentialLocation << endl;
-    std::cout << "score: " << score << endl;
-    std::cout << "---------------" << endl;
+    if (score != -1) {
+        std::cout << "---------------" << endl;
+        std::cout << "minimizer: " << minimizer.kmerSeq << endl;
+        std::cout << "minimizer position (in read): " << minimizer.position << endl;
+        std::cout << "read potential location: " << readPotentialLocation << endl;
+        std::cout << "score: " << score << endl;
+        std::cout << "---------------" << endl;
+    }
+
 }
 
 
+/*========================================= ReadResultPIM ==========================================*/
+/*==================================================================================================*/
+
+ReadResultPIM::ReadResultPIM(int readIndex, int position, int score): readIndex(readIndex),
+                            position(position), score(score) {};
 
 
 /*==================================================================================================*/
@@ -350,10 +358,11 @@ PimPacket::PimPacket(string readSeq) : readSeq(readSeq) {}
 
 /*============================================= Manager ============================================*/
 /*==================================================================================================*/
-Manager::Manager(CPUMinimizers CPUMins, vector<Read> reads){
+Manager::Manager(CPUMinimizers CPUMins, vector<Read> reads, PIMReads results){
     this->CPUMins = CPUMins;
     this->reads = reads;
     this->numRunningJobs = 0;
+    this->PIMReadsResults = results;
 }
 
 void Manager::handleReads(){
@@ -370,19 +379,19 @@ void Manager::handleReads(){
                 if(refMinimizer.minimizer.kmerSeq == readMinimizer.minimizer.kmerSeq){ // checking if its a CPU minimizer
                     string refSeq;
                     // get the sub reference segment to send to WF
-                    readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &readMinimizer.refSubSeq);
+                    readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
                     readMinimizer.refSubSeq = refSeq;
                     // if there is a slot for a new WF job, send it
-                    if(numRunningJobs < MAX_RUNNING_JOBS){
-
-                        runningJobsMtx.lock();
-                        numRunningJobs++;
-                        runningJobsMtx.unlock();
+                    //if(numRunningJobs < MAX_RUNNING_JOBS){
+                    if(true) {
+                        //runningJobsMtx.lock();
+                        //numRunningJobs++;
+                        //runningJobsMtx.unlock();
 
                         thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
                                      &readMinimizer.mapping, false, 1, 1, 1);
 
-                        WFJob.detach();
+                        WFJob.join();
                     }
                     // if not, add to pending jobs and call the pending jobs handler
                     else{
@@ -396,7 +405,7 @@ void Manager::handleReads(){
                     foundMinmizer = true;
                 }
             }
-            // if this minimizer is not a CPU minimizer add it to tthe pim packet
+            // if this minimizer is not a CPU minimizer add it to the pim packet
             if(!foundMinmizer){
                 readMinimizer.score = -1;
                 pimData.minimizers.push_back(readMinimizer.minimizer);
@@ -433,18 +442,31 @@ void Manager::handlePendingReads(){
 
 void Manager::reconstructGenome() {
     int minScore = REF_SUB_SEQUENCE_LENGTH;
+    int readIndex = 0;
+    vector<int> readLocations;
     ReadMinimizer minReadMinimizer(Kmer(0,""));
+    bool pimFlag = false;
+
     for(Read& read : reads) {
         for(ReadMinimizer& readMinimizer : read.minimizers){
-            if (readMinimizer.score < minScore) {
+            if (readMinimizer.score < minScore && readMinimizer.score != -1) {
                 minScore = readMinimizer.score;
                 ReadMinimizer minReadMinimizer(readMinimizer);
             }
         }
+        if (PIMReadsResults[readIndex].score < minScore) {
+            pimFlag = true;
+        }
         minScore = REF_SUB_SEQUENCE_LENGTH;
         wagnerFischerAffineGap(read.seq, minReadMinimizer.refSubSeq,&minReadMinimizer.score,
                                &minReadMinimizer.mapping,true,1,1,1);
-        genome.replace(minReadMinimizer.readPotentialLocation, READ_LENGTH,minReadMinimizer.mapping);
+        if (pimFlag)
+            readLocations.push_back(PIMReadsResults[readIndex].position);
+        else
+            readLocations.push_back(minReadMinimizer.readPotentialLocation);
+        readIndex++;
+        pimFlag = false;
+        //genome.replace(minReadMinimizer.readPotentialLocation, READ_LENGTH,minReadMinimizer.mapping);
     }
 }
 
@@ -684,14 +706,33 @@ void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
     }
 }
 
+void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
+    string line;
+    string readIndex;
+    string position;
+    string score;
+
+    while (getline(readsMapFile, line)) {
+        stringstream lineStream(line);
+        getline(lineStream, readIndex , ',');
+        getline(lineStream, position, ',');
+        getline(lineStream, score, ',');
+        ReadResultPIM row(stoi(readIndex), stoi(position), stoi(score));
+        PIMResults.push_back(row);
+    }
+}
+
 
 int main(int argc, char* argv[]) {
     vector<Read> reads;
     CPUMinimizers CPUMins;
+    PIMReads PIMResults;
     ifstream readsFile;
     ifstream minsFile;
+    ifstream pimResultFile;
     bool readsFileOpen = false;
     bool minsFileOpen = false;
+    bool pimFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
 
     if(argc == 2 && string(argv[1]) == "-rand"){
@@ -700,7 +741,7 @@ int main(int argc, char* argv[]) {
         reads = getRandomReads(numOfReads);
         CPUMins = getRandomCPUMinimizers(reads);
     }
-    else if(argc == 5 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins"){
+    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
         if(!readsFileOpen){
@@ -715,9 +756,18 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+        pimResultFile = ifstream(argv[6]);
+        pimFileOpen = pimResultFile.is_open();
+        if(!pimFileOpen){
+            std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
+            return 1;
+        }
+
         getReadsFromFile(readsFile, reads);
 
         getCPUMinsFromFile(minsFile, CPUMins);
+
+        getReadsMapFromFile(pimResultFile, PIMResults);
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
         print_help();
@@ -730,7 +780,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-    Manager manager(CPUMins, reads);
+    Manager manager(CPUMins, reads, PIMResults);
 
     //manager.printCPUMinimizers();
 

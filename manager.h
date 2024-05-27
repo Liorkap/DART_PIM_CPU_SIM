@@ -61,6 +61,19 @@ public:
     int getWFSeq(int, string*); // Extracts the relevant subRefSegment to send to WF. returns the potential location in refGenome. 
     void print();
 };
+//This is a row in the reads mapping list
+class ReadResultPIM {
+public:
+    int readIndex;
+    int position;
+    int score;
+
+    ReadResultPIM(int readIndex, int position, int score);
+
+};
+
+// This is the CPU minimizers list type
+typedef vector<ReadResultPIM> PIMReads;
 
 // This is the CPU minimizers list type
 typedef vector<RefGenomeMinimizer> CPUMinimizers;
@@ -117,14 +130,16 @@ public:
 class Manager{
 public:
 
-    CPUMinimizers       CPUMins; // List of spu minimizers
+    CPUMinimizers       CPUMins; // List of cpu minimizers
     vector<Read>        reads; // Reads to handle
     deque<PendingJob>   pendingJobsForWF; // These are the pending WF jobs that couldn't be scheduled and will be scheduled when possible. (too many parallel threads)
     int                 numRunningJobs; // Holds the current number of WF running threads
     mutex               runningJobsMtx; // The WF function reduces the number of running threads when its done. This is a shared variable across all WF jobs, protecting it with mutex.
     string              genome;         // the reconstructed genome
+    PIMReads            PIMReadsResults;
 
-    Manager(CPUMinimizers, vector<Read>);
+
+    Manager(CPUMinimizers, vector<Read>, PIMReads results);
     void handleReads(); // handling the reads
     void handlePendingReads(); // handling the pending WF jobs
     void wagnerFischerAffineGap(const string& S1, const string& S2, int* score, string* readMapping, bool backtracking, int wop=1, int wex=1, int wsub=1);

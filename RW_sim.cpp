@@ -8,7 +8,7 @@
 #define BYTE 8 
 #define WRITE_FILE "write_file.txt"
 #define READ_FILE "read_file.txt"
-#define NUM_AFFINE 10 // THISI IS THE REAL VALUE : 15908, mult the sim time by 15908/10 to get the real time
+#define NUM_AFFINE 10 // THIS IS THE REAL VALUE : 15908, mult the sim time by 15908/10 to get the real time
 #define NUM_LINEAR 16 // The total num of linear comps (254710) devided by NUM_AFFINE 
 #define NUM_LINEAR_CMDS 23707 // Defined by WF matrix size (number of cells)
 #define NUM_AFFINE_CMDS 71121 // Defined by WF matrix size (number of cells) * 3 (3 matrices)
@@ -67,8 +67,9 @@ int main(){
         std::cout << "reading for " << affine_it << " affine iteration" << std::endl;
 
         // read results
-        for(int read_it = 0; read_it < READ_SIZE; read_it++){
+        for(uint64_t read_it = 0; read_it < READ_SIZE; read_it++){
             readFile.read(readData, 1);
+            readFile.seekg(0, std::ios::beg);
         }
     
     }
