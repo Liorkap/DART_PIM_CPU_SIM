@@ -164,7 +164,7 @@ void convertSeq2Nums(string& seq){
             //case 'N':   // Unknown letter, could be every letter
              //   seq[i] = '0' + (rand() % 4);
             default:
-                seq[i] = '0' + (rand() % 4);
+                seq[i] = seq[i];
             //std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
         }
     }
@@ -392,6 +392,9 @@ void Manager::handleReads(){
                                      &readMinimizer.mapping, false, 1, 1, 1);
 
                         WFJob.join();
+                        int score = readMinimizer.score;
+                        if(score < 8)
+                            cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
                     }
                     // if not, add to pending jobs and call the pending jobs handler
                     else{
@@ -471,42 +474,42 @@ void Manager::reconstructGenome() {
 }
 
 void Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* score, string* readMapping, bool backtraching, int wop, int wex, int wsub) {
-    int n = S1.size();
-    int m = S2.size();
+    const int n = S1.size();
+    const int m = S2.size();
     vector<int> contenders;
     int minCon = 0;
     string seq1_align = "";
     string seq2_align = "";
 
-    // Initialize matrices D, M1, and M2 with appropriate dimensions
-    vector<vector<int>> D(n + 1, vector<int>(m + 1, 0));
-    vector<vector<int>> M1(n + 1, vector<int>(m + 1, 0));
-    vector<vector<int>> M2(n + 1, vector<int>(m + 1, 0));
+    int D[REF_SUB_SEQUENCE_LENGTH+1][READ_LENGTH+1] = {0};
+    int M1[REF_SUB_SEQUENCE_LENGTH+1][READ_LENGTH+1] = {0};
+    int M2[REF_SUB_SEQUENCE_LENGTH+1][READ_LENGTH+1] = {0};
 
-    // Initialize matrices with appropriate values
-    for (int i = 1; i <= n; ++i) {
-        D[i][0] = i * wex;
-        M1[i][0] = i * wex;
-    }
-    for (int j = 1; j <= m; ++j) {
-        D[0][j] = j * wex;
-        M2[0][j] = j * wex;
-    }
+    const int max_gap = 2*ERROR_THRESHOLD;
+    const int max_gap_penalty = max_gap + wop;
 
-    // Fill in the matrices using dynamic programming
+    // Fill the DP tables using dynamic programming
     for (int i = 1; i <= n; ++i) {
         for (int j = 1; j <= m; ++j) {
-            M1[i][j] = min(M1[i - 1][j] + wex, D[i - 1][j] + wop + wex);
-            M2[i][j] = min(M2[i][j - 1] + wex, D[i][j - 1] + wop + wex);
+            if (abs(i - j) <= max_gap) {
+                if (abs (i - 1 - j) > max_gap) {
+                    M1[i - 1][j] = max_gap_penalty;
+                    D[i - 1][j] = max_gap_penalty;
+                }
+                if (abs (i - (j - 1)) > max_gap) {
+                    M2[i][j - 1] = max_gap_penalty;
+                    D[i][j - 1] = max_gap_penalty;
+                }
 
-            if (S1[i - 1] == S2[j - 1]) {
-                D[i][j] = D[i - 1][j - 1];
-            } else {
-                D[i][j] = min({M1[i][j], M2[i][j], D[i - 1][j - 1] + wsub});
+                M1[i][j] = min(M1[i - 1][j] + wex, D[i - 1][j] + wop + wex);
+                M2[i][j] = min(M2[i][j - 1] + wex, D[i][j - 1] + wop + wex);
+                if (S1[i - 1] == S2[j - 1])
+                    D[i][j] = D[i - 1][j - 1];
+                else
+                    D[i][j] = min({(M1[i][j]), M2[i][j], D[i - 1][j - 1] + wsub});
             }
         }
     }
-    // Return the optimal alignment score
     *score = D[n][m];
 
     // find the alignment of the read according to sub reference sequence
@@ -665,6 +668,42 @@ void print_help(){
     std::cout << "------------------------------------------------------------------------------------------------------------" << endl;
 }
 
+void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
+    string line;
+    ofstream outFile("RISCV_cpu_mins_50k.txt", ios::app);
+    readsFile.clear();                 // Clear the EOF flag
+    readsFile.seekg(0, ios::beg);      // Move the file pointer to the beginning
+    //skip first line
+    if(!getline(readsFile, line)){
+        std::cout << "MSG: Reads file is empty." << line << endl;
+        return;
+    }
+    while(getline(readsFile, line)){
+        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
+        Read read(line);
+        for(ReadMinimizer& readMinimizer : read.minimizers) {
+            bool foundMinmizer = false;
+            // go over the CPU minimizers and check if this minimizer is there
+            for (int i = 0; i < CPUMins.size(); i++) {
+                auto refMinimizer = CPUMins[i];
+
+                if (refMinimizer.minimizer.kmerSeq ==
+                    readMinimizer.minimizer.kmerSeq) { // checking if its a CPU minimizer
+                    outFile << refMinimizer.minimizer.kmerSeq << ", " << refMinimizer.refSegmentPosition  << ", "
+                    << refMinimizer.refSegment << std::endl;
+
+                }
+            }
+        }
+
+        //skip two lines
+        for(int i = 0; i < 3; i++){
+            if(!getline(readsFile, line)){
+                break;
+            }
+        }
+    }
+}
 
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     string line;
@@ -724,6 +763,7 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 
 
 int main(int argc, char* argv[]) {
+
     vector<Read> reads;
     CPUMinimizers CPUMins;
     PIMReads PIMResults;
@@ -773,6 +813,7 @@ int main(int argc, char* argv[]) {
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
 
+
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
         print_help();
@@ -792,7 +833,7 @@ int main(int argc, char* argv[]) {
     manager.handleReads();
     cout << "done handleReads";
 
-    manager.printReads();
+    //manager.printReads();
 
     manager.reconstructGenome();
 
