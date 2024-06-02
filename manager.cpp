@@ -725,25 +725,24 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 
 int main(int argc, char* argv[]) {
 
-    vector<Read> reads;
-    CPUMinimizers CPUMins;
-    PIMReads PIMResults;
+    //vector<Read> reads;
+    //CPUMinimizers CPUMins;
+    //PIMReads PIMResults;
     ifstream readsFile;
-    ifstream minsFile;
-    ifstream pimResultFile;
+    //ifstream minsFile;
+    //ifstream pimResultFile;
     bool readsFileOpen = false;
-    bool minsFileOpen = false;
-    bool pimFileOpen = false;
-    int numOfReads = 100; //relevant to the rand running option
+    //bool minsFileOpen = false;
+    //bool pimFileOpen = false;
+    //int numOfReads = 100; //relevant to the rand running option
 
-    if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
+    if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
-        if(!readsFileOpen){
+        if (!readsFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[2]) << endl;
             return 1;
-        }
-        else {
+        } else {
             std::cout << " open file " << string(argv[2]) << endl;
         }
 /*
@@ -768,7 +767,9 @@ int main(int argc, char* argv[]) {
         cout << "start getReadsFromFile" << endl;
         //skip first line
         getline(readsFile, line);
-        cout << "after getline";
+        cout << "after getline" << line;
+    }
+        /*
         if(!getline(readsFile, line)){
             std::cout << "MSG: Reads file is empty." << line << endl;
             return 1;
@@ -824,7 +825,7 @@ int main(int argc, char* argv[]) {
     manager.reconstructGenome();
 
 
-/*
+
     if(readsFileOpen){
         readsFile.close();
     }
