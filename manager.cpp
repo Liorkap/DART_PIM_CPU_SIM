@@ -4,6 +4,54 @@
 /*============================================= Heap ===============================================*/
 /*==================================================================================================*/
 
+void Heap::heapify(size_t index) {
+    size_t size = elements.size();
+    size_t largest = index;
+    size_t left = 2 * index + 1;
+    size_t right = 2 * index + 2;
+
+    if (left < size && (elements[left]->kmerSeq < elements[largest]->kmerSeq)) {
+        largest = left;
+    }
+
+    if (right < size && (elements[right]->kmerSeq < elements[largest]->kmerSeq)) {
+        largest = right;
+    }
+
+    if (largest != index) {
+        std::swap(elements[index], elements[largest]);
+        heapify(largest);
+    }
+}
+
+Heap::Heap(const std::vector<Kmer*>& values) : elements(values) {
+    std::make_heap(elements.begin(), elements.end(), compareMinimizers);
+}
+
+void Heap::insert(Kmer* value) {
+    elements.push_back(value);
+    size_t index = elements.size() - 1;
+
+    while (index > 0) {
+        size_t parent = (index - 1) / 2;
+        if (elements[index]->kmerSeq > elements[parent]->kmerSeq) {
+            break;
+        }
+
+        std::swap(elements[index], elements[parent]);
+        index = parent;
+    }
+    heapify(0);
+}
+
+Kmer* Heap::minElement() {
+    return elements[0];
+}
+
+bool Heap::compareMinimizers(const Kmer* a, const Kmer* b) {
+    return b->kmerSeq < a->kmerSeq;
+}
+
 /*==================================================================================================*/
 /*==================================================================================================*/
 
@@ -83,7 +131,7 @@ void ReadMinimizer::print(){
 /*==================================================================================================*/
 
 ReadResultPIM::ReadResultPIM(int readIndex, int position, int score): readIndex(readIndex),
-                            position(position), score(score) {};
+                                                                      position(position), score(score) {};
 
 
 /*==================================================================================================*/
@@ -113,11 +161,11 @@ void convertSeq2Nums(string& seq){
             case 't':
                 seq[i] = '0' + T;
                 break;
-            //case 'N':   // Unknown letter, could be every letter
-             //   seq[i] = '0' + (rand() % 4);
+                //case 'N':   // Unknown letter, could be every letter
+                //   seq[i] = '0' + (rand() % 4);
             default:
                 seq[i] = seq[i];
-            //std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
+                //std:cout << "Can't convert seq element " << seq[i] << "to number representasion" << endl;
         }
     }
 }
@@ -135,7 +183,7 @@ Read::Read(string readSeq) {
         this->minimizers.push_back(readMinimizer);
     }
 }
-/*
+
 std::vector<Kmer*> Read::createMinimizers(const string &seq) {
     int i;
     std::vector<Kmer*> heapKmers;
@@ -171,7 +219,7 @@ std::vector<Kmer*> Read::createMinimizers(const string &seq) {
     }
     return outMinimizers;
 }
-*/
+
 
 uint32_t invertibleHash(uint32_t x){
     uint32_t m = UINT_MAX;
@@ -333,16 +381,30 @@ void Manager::handleReads(){
                     // get the sub reference segment to send to WF
                     readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
                     readMinimizer.refSubSeq = refSeq;
+                    // if there is a slot for a new WF job, send it
+                    //if(numRunningJobs < MAX_RUNNING_JOBS){
+                    if(true) {
+                        //runningJobsMtx.lock();
+                        //numRunningJobs++;
+                        //runningJobsMtx.unlock();
 
-                    thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
-                                 &readMinimizer.mapping, false, 1, 1, 1);
+                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
+                                     &readMinimizer.mapping, false, 1, 1, 1);
 
-                    WFJob.join();
-                    int score = readMinimizer.score;
-                    if(score < 8)
-                        cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
-
-
+                        WFJob.join();
+                        int score = readMinimizer.score;
+                        if(score < 8)
+                            cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
+                    }
+                        // if not, add to pending jobs and call the pending jobs handler
+                    else{
+                        std::cout << "reached max running jobs" << endl;
+                        PendingJob currRead(read.seq, refSeq, &readMinimizer.score);
+                        pendingJobsForWF.push_back(currRead);
+                        if(pendingJobsForWF.size() == 1){
+                            handlePendingReads();
+                        }
+                    }
                     foundMinmizer = true;
                 }
             }
@@ -628,7 +690,7 @@ void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
                 if (refMinimizer.minimizer.kmerSeq ==
                     readMinimizer.minimizer.kmerSeq) { // checking if its a CPU minimizer
                     outFile << refMinimizer.minimizer.kmerSeq << ", " << refMinimizer.refSegmentPosition  << ", "
-                    << refMinimizer.refSegment << std::endl;
+                            << refMinimizer.refSegment << std::endl;
 
                 }
             }
@@ -642,9 +704,8 @@ void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
         }
     }
 }
-/*
+
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
-    cout << "start getReadsFromFile" << endl;
     string line;
     //skip first line
     if(!getline(readsFile, line)){
@@ -653,7 +714,6 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     }
     while(getline(readsFile, line)){
         //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
-        cout << "idan ";
         Read read(line);
         reads.push_back(read);
 
@@ -665,27 +725,6 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
         }
     }
 }
-*/
-/*
-void getReadsFromFile(ifstream& readsFile){
-    cout << "start getReadsFromFile11111" << endl;
-    cout << "hello" << endl;
-    string line = " ";
-    //skip first line
-    cout << "**************";
-    if(!getline(readsFile, line)){
-        std::cout << "MSG: Reads file is empty." << line << endl;
-        return;
-    }
-    cout << "hi";
-    while(getline(readsFile, line)){
-        cout << "while";
-        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
-        cout << "idan magram ";
-        //skip two line
-    }
-}
- */
 
 void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
     string line;
@@ -734,86 +773,45 @@ int main(int argc, char* argv[]) {
     bool readsFileOpen = false;
     bool minsFileOpen = false;
     bool pimFileOpen = false;
-    //int numOfReads = 100; //relevant to the rand running option
-    //string ex = "AAGACCAGTCTGGCCAACATGGTGAAACCCCATCTTTACTAAAAATACAAATAATTAGCTGGGTGTGGTGGTGGGCACCTGTAATTCCAGCTACTCGGGAAGTGAAGCAGGAGAATCACATGAACCCTGGAGGCAGAGGATGCAGTGAGT";
-    //Read read(ex);
-    //cout << "After read";
+    int numOfReads = 100; //relevant to the rand running option
 
-    if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
+    if(argc == 2 && string(argv[1]) == "-rand"){
+        srand(time(0));
+
+        reads = getRandomReads(numOfReads);
+        CPUMins = getRandomCPUMinimizers(reads);
+    }
+    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
-        if (!readsFileOpen) {
+        if(!readsFileOpen){
             std::cout << "ERROR: Can't open file " << string(argv[2]) << endl;
             return 1;
-        } else {
-            std::cout << " open file " << string(argv[2]) << endl;
         }
 
         minsFile = ifstream(argv[4]);
         minsFileOpen = minsFile.is_open();
-        if (!minsFileOpen) {
+        if(!minsFileOpen){
             std::cout << "ERROR: Can't open file " << string(argv[4]) << endl;
             return 1;
         }
 
         pimResultFile = ifstream(argv[6]);
         pimFileOpen = pimResultFile.is_open();
-        if (!pimFileOpen) {
+        if(!pimFileOpen){
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
 
-        cout << "************Start************" << endl;
-        string line;
-        cout << "hi22";
-
-        cout << "start getReadsFromFile11" << endl;
-
-        cout << "after getline";
-
-
-        if (!getline(readsFile, line)) {
-            std::cout << "MSG: Reads file is empty." << line << endl;
-            return 1;
-        }
-
-
-        while (getline(readsFile, line)) {
-            //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
-            //cout << "idan ";
-            Read read(line);
-            cout << read.seq;
-            reads.push_back(read);
-
-            //skip two lines
-            for (int i = 0; i < 3; i++) {
-                if (!getline(readsFile, line)) {
-                    break;
-                }
-            }
-        }
-
-        if(readsFileOpen){
-            readsFile.close();
-        }
-
+        getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
 
         getCPUMinsFromFile(minsFile, CPUMins);
         cout << "done getCPUMinsFromFile";
 
 
-        if(minsFileOpen){
-            minsFile.close();
-        }
-
-
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
-
-        if (pimFileOpen){
-            pimResultFile.close();
-        }
 
 
     }
@@ -841,8 +839,13 @@ int main(int argc, char* argv[]) {
 
 
 
+    if(readsFileOpen){
+        readsFile.close();
+    }
 
-
+    if(minsFileOpen){
+        minsFile.close();
+    }
 
     return 0;
 }
