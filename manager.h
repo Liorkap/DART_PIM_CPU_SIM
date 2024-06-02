@@ -148,3 +148,19 @@ public:
     void printCPUMinimizers();
 };
 
+namespace std {
+    template<>
+    struct hash<Kmer> {
+        std::size_t operator()(const Kmer &m) const {
+            return std::hash<std::string>()(m.kmerSeq);
+        }
+    };
+
+    template<>
+    struct hash<ReadMinimizer> {
+        std::size_t operator()(const ReadMinimizer &rm) const {
+            return std::hash<Kmer>()(rm.minimizer);
+        }
+    };
+}
+

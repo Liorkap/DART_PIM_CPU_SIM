@@ -4,54 +4,6 @@
 /*============================================= Heap ===============================================*/
 /*==================================================================================================*/
 
-void Heap::heapify(size_t index) {
-    size_t size = elements.size();
-    size_t largest = index;
-    size_t left = 2 * index + 1;
-    size_t right = 2 * index + 2;
-
-    if (left < size && (elements[left]->kmerSeq < elements[largest]->kmerSeq)) {
-        largest = left;
-    }
-
-    if (right < size && (elements[right]->kmerSeq < elements[largest]->kmerSeq)) {
-        largest = right;
-    }
-
-    if (largest != index) {
-        std::swap(elements[index], elements[largest]);
-        heapify(largest);
-    }
-}
-
-Heap::Heap(const std::vector<Kmer*>& values) : elements(values) {
-    std::make_heap(elements.begin(), elements.end(), compareMinimizers);
-}
-
-void Heap::insert(Kmer* value) {
-    elements.push_back(value);
-    size_t index = elements.size() - 1;
-
-    while (index > 0) {
-        size_t parent = (index - 1) / 2;
-        if (elements[index]->kmerSeq > elements[parent]->kmerSeq) {
-            break;
-        }
-
-        std::swap(elements[index], elements[parent]);
-        index = parent;
-    }
-    heapify(0);
-}
-
-Kmer* Heap::minElement() {
-    return elements[0];
-}
-
-bool Heap::compareMinimizers(const Kmer* a, const Kmer* b) {
-    return b->kmerSeq < a->kmerSeq;
-}
-
 /*==================================================================================================*/
 /*==================================================================================================*/
 
@@ -183,7 +135,7 @@ Read::Read(string readSeq) {
         this->minimizers.push_back(readMinimizer);
     }
 }
-
+/*
 std::vector<Kmer*> Read::createMinimizers(const string &seq) {
     int i;
     std::vector<Kmer*> heapKmers;
@@ -219,7 +171,7 @@ std::vector<Kmer*> Read::createMinimizers(const string &seq) {
     }
     return outMinimizers;
 }
-
+*/
 
 uint32_t invertibleHash(uint32_t x){
     uint32_t m = UINT_MAX;
@@ -381,30 +333,16 @@ void Manager::handleReads(){
                     // get the sub reference segment to send to WF
                     readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
                     readMinimizer.refSubSeq = refSeq;
-                    // if there is a slot for a new WF job, send it
-                    //if(numRunningJobs < MAX_RUNNING_JOBS){
-                    if(true) {
-                        //runningJobsMtx.lock();
-                        //numRunningJobs++;
-                        //runningJobsMtx.unlock();
 
-                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
-                                     &readMinimizer.mapping, false, 1, 1, 1);
+                    thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
+                                 &readMinimizer.mapping, false, 1, 1, 1);
 
-                        WFJob.join();
-                        int score = readMinimizer.score;
-                        if(score < 8)
-                            cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
-                    }
-                    // if not, add to pending jobs and call the pending jobs handler
-                    else{
-                        std::cout << "reached max running jobs" << endl;
-                        PendingJob currRead(read.seq, refSeq, &readMinimizer.score);
-                        pendingJobsForWF.push_back(currRead);
-                        if(pendingJobsForWF.size() == 1){
-                            handlePendingReads();
-                        }
-                    }
+                    WFJob.join();
+                    int score = readMinimizer.score;
+                    if(score < 8)
+                        cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
+
+
                     foundMinmizer = true;
                 }
             }
@@ -802,7 +740,7 @@ int main(int argc, char* argv[]) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
-
+        cout << "************Start************" << endl;
         getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
 
