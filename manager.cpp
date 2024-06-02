@@ -795,7 +795,9 @@ int main(int argc, char* argv[]) {
             }
         }
 
-
+        if(readsFileOpen){
+            readsFile.close();
+        }
 
         cout << "done getReadsFromFile";
 
@@ -803,8 +805,17 @@ int main(int argc, char* argv[]) {
         cout << "done getCPUMinsFromFile";
 
 
+        if(minsFileOpen){
+            minsFile.close();
+        }
+
+
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
+
+        if (pimFileOpen){
+            pimResultFile.close();
+        }
 
 
     }
@@ -832,13 +843,7 @@ int main(int argc, char* argv[]) {
 
 
 
-    if(readsFileOpen){
-        readsFile.close();
-    }
 
-    if(minsFileOpen){
-        minsFile.close();
-    }
 
 
     return 0;
