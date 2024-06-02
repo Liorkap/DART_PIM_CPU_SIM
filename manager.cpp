@@ -727,7 +727,7 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 
 int main(int argc, char* argv[]) {
 
-    vector<Read> reads;
+    //vector<Read> reads;
     //CPUMinimizers CPUMins;
     //PIMReads PIMResults;
     ifstream readsFile;
@@ -737,9 +737,9 @@ int main(int argc, char* argv[]) {
     bool minsFileOpen = false;
     bool pimFileOpen = false;
     //int numOfReads = 100; //relevant to the rand running option
-    string ex = "AAGACCAGTCTGGCCAACATGGTGAAACCCCATCTTTACTAAAAATACAAATAATTAGCTGGGTGTGGTGGTGGGCACCTGTAATTCCAGCTACTCGGGAAGTGAAGCAGGAGAATCACATGAACCCTGGAGGCAGAGGATGCAGTGAGT";
-    Read read(ex);
-    cout << "After read";
+    //string ex = "AAGACCAGTCTGGCCAACATGGTGAAACCCCATCTTTACTAAAAATACAAATAATTAGCTGGGTGTGGTGGTGGGCACCTGTAATTCCAGCTACTCGGGAAGTGAAGCAGGAGAATCACATGAACCCTGGAGGCAGAGGATGCAGTGAGT";
+    //Read read(ex);
+    //cout << "After read";
 
     if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
         readsFile = ifstream(argv[2]);
@@ -783,8 +783,8 @@ int main(int argc, char* argv[]) {
         while (getline(readsFile, line)) {
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
             cout << "idan ";
-            Read read(line);
-            reads.push_back(read);
+            //Read read(line);
+            //reads.push_back(read);
 
             //skip two lines
             for (int i = 0; i < 3; i++) {
