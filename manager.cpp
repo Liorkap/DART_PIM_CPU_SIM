@@ -644,6 +644,7 @@ void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
 }
 
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
+    cout << "start getReadsFromFile" << endl;
     string line;
     //skip first line
     if(!getline(readsFile, line)){
