@@ -725,7 +725,7 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 
 int main(int argc, char* argv[]) {
 
-    vector<Read> reads;
+    //vector<Read> reads;
     //CPUMinimizers CPUMins;
     //PIMReads PIMResults;
     ifstream readsFile;
@@ -779,8 +779,8 @@ int main(int argc, char* argv[]) {
         while (getline(readsFile, line)) {
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
             cout << "idan ";
-            Read read(line);
-            reads.push_back(read);
+            //Read read(line);
+            //reads.push_back(read);
 
             //skip two lines
             for (int i = 0; i < 3; i++) {
@@ -791,7 +791,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-/*
+        /*
         cout << "done getReadsFromFile";
 
         getCPUMinsFromFile(minsFile, CPUMins);
