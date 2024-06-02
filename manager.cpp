@@ -653,6 +653,7 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     }
     while(getline(readsFile, line)){
         //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
+        cout << "idan ";
         Read read(line);
         reads.push_back(read);
 
