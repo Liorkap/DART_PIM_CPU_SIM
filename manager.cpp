@@ -748,14 +748,14 @@ int main(int argc, char* argv[]) {
 
         minsFile = ifstream(argv[4]);
         minsFileOpen = minsFile.is_open();
-        if(!minsFileOpen){
+        if (!minsFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[4]) << endl;
             return 1;
         }
 
         pimResultFile = ifstream(argv[6]);
         pimFileOpen = pimResultFile.is_open();
-        if(!pimFileOpen){
+        if (!pimFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
@@ -766,15 +766,16 @@ int main(int argc, char* argv[]) {
 
         cout << "start getReadsFromFile" << endl;
         //skip first line
-        getline(readsFile, line);
+        //getline(readsFile, line);
         cout << "after getline" << line;
-    }
-        /*
-        if(!getline(readsFile, line)){
+
+
+        if (!getline(readsFile, line)) {
             std::cout << "MSG: Reads file is empty." << line << endl;
             return 1;
         }
-
+    }
+/*
         while(getline(readsFile, line)){
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
             cout << "idan ";
