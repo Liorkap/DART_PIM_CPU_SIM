@@ -674,7 +674,9 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
         std::cout << "MSG: Reads file is empty." << line << endl;
         return;
     }
+    cout << "hi";
     while(getline(readsFile, line)){
+        cout << "while";
         //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
         cout << "idan magram ";
         //skip two line
@@ -758,7 +760,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         cout << "************Start************" << endl;
-        Read id("fsdgdfg");
+        //Read id("AAA");
         getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
 
