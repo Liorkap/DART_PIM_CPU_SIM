@@ -666,10 +666,11 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     }
 }
 */
-void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
+void getReadsFromFile(ifstream& readsFile){
     cout << "start getReadsFromFile" << endl;
     string line;
     //skip first line
+    cout << "**************";
     if(!getline(readsFile, line)){
         std::cout << "MSG: Reads file is empty." << line << endl;
         return;
@@ -761,7 +762,7 @@ int main(int argc, char* argv[]) {
         }
         cout << "************Start************" << endl;
         //Read id("AAA");
-        getReadsFromFile(readsFile, reads);
+        getReadsFromFile(readsFile);
         cout << "done getReadsFromFile";
 
         getCPUMinsFromFile(minsFile, CPUMins);
