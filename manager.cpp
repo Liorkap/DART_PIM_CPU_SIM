@@ -762,6 +762,13 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         cout << "************Start************" << endl;
+        string line;
+        cout << "hi22";
+        while(getline(readsFile, line)){
+            //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
+            cout << "idan magram ";
+            //skip two line
+        }
         //Read id("AAA");
         getReadsFromFile(readsFile);
         cout << "done getReadsFromFile";
