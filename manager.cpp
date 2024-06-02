@@ -769,10 +769,12 @@ int main(int argc, char* argv[]) {
 
         cout << "start getReadsFromFile" << endl;
         //skip first line
+        /*
         if(!getline(readsFile, line)){
             std::cout << "MSG: Reads file is empty." << line << endl;
             return 1;
         }
+         */
         while(getline(readsFile, line)){
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
             cout << "idan ";
