@@ -727,7 +727,7 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 
 int main(int argc, char* argv[]) {
 
-    //vector<Read> reads;
+    vector<Read> reads;
     //CPUMinimizers CPUMins;
     //PIMReads PIMResults;
     ifstream readsFile;
@@ -785,7 +785,7 @@ int main(int argc, char* argv[]) {
             cout << "idan ";
             Read read(line);
             cout << read.seq;
-            //reads.push_back(read);
+            reads.push_back(read);
 
             //skip two lines
             for (int i = 0; i < 3; i++) {
