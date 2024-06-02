@@ -729,11 +729,11 @@ int main(int argc, char* argv[]) {
     //CPUMinimizers CPUMins;
     //PIMReads PIMResults;
     ifstream readsFile;
-    //ifstream minsFile;
-    //ifstream pimResultFile;
+    ifstream minsFile;
+    ifstream pimResultFile;
     bool readsFileOpen = false;
-    //bool minsFileOpen = false;
-    //bool pimFileOpen = false;
+    bool minsFileOpen = false;
+    bool pimFileOpen = false;
     //int numOfReads = 100; //relevant to the rand running option
 
     if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
@@ -745,7 +745,7 @@ int main(int argc, char* argv[]) {
         } else {
             std::cout << " open file " << string(argv[2]) << endl;
         }
-/*
+
         minsFile = ifstream(argv[4]);
         minsFileOpen = minsFile.is_open();
         if(!minsFileOpen){
@@ -759,7 +759,7 @@ int main(int argc, char* argv[]) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
-        */
+
         cout << "************Start************" << endl;
         string line;
         cout << "hi22";
