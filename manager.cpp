@@ -728,8 +728,8 @@ void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
 int main(int argc, char* argv[]) {
 
     vector<Read> reads;
-    //CPUMinimizers CPUMins;
-    //PIMReads PIMResults;
+    CPUMinimizers CPUMins;
+    PIMReads PIMResults;
     ifstream readsFile;
     ifstream minsFile;
     ifstream pimResultFile;
@@ -794,9 +794,9 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-    }
 
-        /*
+
+
         cout << "done getReadsFromFile";
 
         getCPUMinsFromFile(minsFile, CPUMins);
@@ -839,7 +839,7 @@ int main(int argc, char* argv[]) {
     if(minsFileOpen){
         minsFile.close();
     }
-    */
+
 
     return 0;
 }
