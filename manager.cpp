@@ -784,6 +784,7 @@ int main(int argc, char* argv[]) {
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
             cout << "idan ";
             Read read(line);
+            cout << read.seq;
             //reads.push_back(read);
 
             //skip two lines
