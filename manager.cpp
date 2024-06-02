@@ -770,9 +770,8 @@ int main(int argc, char* argv[]) {
         cout << "hi22";
 
         cout << "start getReadsFromFile11" << endl;
-        //skip first line
-        //getline(readsFile, line);
-        cout << "after getline" << line;
+
+        cout << "after getline";
 
 
         if (!getline(readsFile, line)) {
