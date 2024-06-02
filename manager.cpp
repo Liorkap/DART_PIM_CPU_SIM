@@ -642,7 +642,7 @@ void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
         }
     }
 }
-
+/*
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     cout << "start getReadsFromFile" << endl;
     string line;
@@ -663,6 +663,21 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
                 break;
             }
         }
+    }
+}
+*/
+void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
+    cout << "start getReadsFromFile" << endl;
+    string line;
+    //skip first line
+    if(!getline(readsFile, line)){
+        std::cout << "MSG: Reads file is empty." << line << endl;
+        return;
+    }
+    while(getline(readsFile, line)){
+        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
+        cout << "idan magram ";
+        //skip two line
     }
 }
 
@@ -743,6 +758,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         cout << "************Start************" << endl;
+        Read id("fsdgdfg");
         getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
 
