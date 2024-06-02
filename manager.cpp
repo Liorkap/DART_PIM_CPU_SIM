@@ -736,13 +736,7 @@ int main(int argc, char* argv[]) {
     bool pimFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
 
-    if(argc == 2 && string(argv[1]) == "-rand"){
-        srand(time(0));
-
-        reads = getRandomReads(numOfReads);
-        CPUMins = getRandomCPUMinimizers(reads);
-    }
-    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
+    if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
         if(!readsFileOpen){
@@ -773,7 +767,8 @@ int main(int argc, char* argv[]) {
 
         cout << "start getReadsFromFile" << endl;
         //skip first line
-
+        getline(readsFile, line);
+        cout << "after getline";
         if(!getline(readsFile, line)){
             std::cout << "MSG: Reads file is empty." << line << endl;
             return 1;
@@ -829,7 +824,7 @@ int main(int argc, char* argv[]) {
     manager.reconstructGenome();
 
 
-
+/*
     if(readsFileOpen){
         readsFile.close();
     }
@@ -837,6 +832,7 @@ int main(int argc, char* argv[]) {
     if(minsFileOpen){
         minsFile.close();
     }
+    */
 
     return 0;
 }
