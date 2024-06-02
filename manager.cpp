@@ -669,7 +669,7 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
 void getReadsFromFile(ifstream& readsFile){
     cout << "start getReadsFromFile11111" << endl;
     cout << "hello" << endl;
-    string line;
+    string line = " ";
     //skip first line
     cout << "**************";
     if(!getline(readsFile, line)){
