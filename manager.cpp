@@ -126,11 +126,9 @@ void convertSeq2Nums(string& seq){
 /*==================================================================================================*/
 
 Read::Read(string readSeq) {
-    cout << "read ctr";
     vector<Kmer> readMinimizers = findMinimizers(readSeq);
     convertSeq2Nums(readSeq);
     this->seq = readSeq;
-    cout << "seq";
 
     for(Kmer minimizer : readMinimizers){
         ReadMinimizer readMinimizer(minimizer);
@@ -782,7 +780,7 @@ int main(int argc, char* argv[]) {
 
         while (getline(readsFile, line)) {
             //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
-            cout << "idan ";
+            //cout << "idan ";
             Read read(line);
             cout << read.seq;
             reads.push_back(read);
