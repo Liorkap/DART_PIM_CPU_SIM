@@ -838,7 +838,7 @@ int main(int argc, char* argv[]) {
     manager.reconstructGenome();
 
 */
-    }
+
     if(readsFileOpen){
         readsFile.close();
     }
