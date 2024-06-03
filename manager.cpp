@@ -808,12 +808,12 @@ int main(int argc, char* argv[]) {
 
         getCPUMinsFromFile(minsFile, CPUMins);
         cout << "done getCPUMinsFromFile";
-/*
+
 
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
 
-
+/*
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
         print_help();
