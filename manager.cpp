@@ -805,10 +805,10 @@ int main(int argc, char* argv[]) {
 
         getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
-/*
+
         getCPUMinsFromFile(minsFile, CPUMins);
         cout << "done getCPUMinsFromFile";
-
+/*
 
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
