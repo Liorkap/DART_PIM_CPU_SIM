@@ -65,12 +65,13 @@ int main(){
         }
 
         std::cout << "reading for " << affine_it << " affine iteration" << std::endl;
-
+/*
         // read results
         for(uint64_t read_it = 0; read_it < READ_SIZE; read_it++){
             readFile.read(readData, 1);
             readFile.seekg(0, std::ios::beg);
         }
+        */
     
     }
 
