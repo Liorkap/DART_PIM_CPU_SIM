@@ -387,11 +387,13 @@ void Manager::handleReads(){
                         //runningJobsMtx.lock();
                         //numRunningJobs++;
                         //runningJobsMtx.unlock();
+                        wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
+                                &readMinimizer.mapping, false, 1, 1, 1);
 
-                        thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
-                                     &readMinimizer.mapping, false, 1, 1, 1);
+                        //thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
+                        //             &readMinimizer.mapping, false, 1, 1, 1);
 
-                        WFJob.join();
+                        //WFJob.join();
                         int score = readMinimizer.score;
                         if(score < 8)
                             cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
