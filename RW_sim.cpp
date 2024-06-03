@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cstdint>
 
 #define WRITE_SIZE 162 // READ + MINIMIZER
 #define NUM_WRITES_EACH_LNEAR 12095 //num read-minimizer pairs / num_writes_total (nume_writes_total = num_linear_iterations_total = 254710)
