@@ -23,7 +23,7 @@ int main(){
     char writeData[WRITE_SIZE];
     char readData[1];
     char cmd[CMD_SIZE];
-
+/*
     // generate write data (read + minimizers)
     for(int i = 0; i < WRITE_SIZE; i++){
         writeData[i] = 'a';
@@ -65,15 +65,15 @@ int main(){
         }
 
         std::cout << "reading for " << affine_it << " affine iteration" << std::endl;
-/*
+*/
         // read results
-        for(uint64_t read_it = 0; read_it < READ_SIZE; read_it++){
+        for(uint64_t read_it = 0; read_it < 10; read_it++){
             readFile.read(readData, 1);
             readFile.seekg(0, std::ios::beg);
         }
-        */
+
     
-    }
+    //}
 
 
 }
