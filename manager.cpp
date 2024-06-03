@@ -813,7 +813,7 @@ int main(int argc, char* argv[]) {
         getReadsMapFromFile(pimResultFile, PIMResults);
         cout << "done getReadsMapFromFile";
 
-/*
+
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
         print_help();
@@ -827,7 +827,7 @@ int main(int argc, char* argv[]) {
 
 
     Manager manager(CPUMins, reads, PIMResults);
-
+    /*
     //manager.printCPUMinimizers();
 
     manager.handleReads();
