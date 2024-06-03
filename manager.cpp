@@ -805,7 +805,7 @@ int main(int argc, char* argv[]) {
 
         getReadsFromFile(readsFile, reads);
         cout << "done getReadsFromFile";
-
+/*
         getCPUMinsFromFile(minsFile, CPUMins);
         cout << "done getCPUMinsFromFile";
 
@@ -837,7 +837,7 @@ int main(int argc, char* argv[]) {
 
     manager.reconstructGenome();
 
-
+*/
 
     if(readsFileOpen){
         readsFile.close();
