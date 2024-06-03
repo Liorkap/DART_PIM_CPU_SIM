@@ -827,12 +827,12 @@ int main(int argc, char* argv[]) {
 
 
     Manager manager(CPUMins, reads, PIMResults);
-    /*
+
     //manager.printCPUMinimizers();
 
     manager.handleReads();
     cout << "done handleReads";
-
+/*
     //manager.printReads();
 
     manager.reconstructGenome();
