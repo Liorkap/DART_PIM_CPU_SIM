@@ -781,24 +781,24 @@ int main(int argc, char* argv[]) {
         reads = getRandomReads(numOfReads);
         CPUMins = getRandomCPUMinimizers(reads);
     }
-    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim"){
+    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
-        if(!readsFileOpen){
+        if (!readsFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[2]) << endl;
             return 1;
         }
 
         minsFile = ifstream(argv[4]);
         minsFileOpen = minsFile.is_open();
-        if(!minsFileOpen){
+        if (!minsFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[4]) << endl;
             return 1;
         }
 
         pimResultFile = ifstream(argv[6]);
         pimFileOpen = pimResultFile.is_open();
-        if(!pimFileOpen){
+        if (!pimFileOpen) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
@@ -838,7 +838,7 @@ int main(int argc, char* argv[]) {
     manager.reconstructGenome();
 
 */
-
+    }
     if(readsFileOpen){
         readsFile.close();
     }
