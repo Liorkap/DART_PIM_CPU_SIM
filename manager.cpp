@@ -834,12 +834,12 @@ int main(int argc, char* argv[]) {
 
     manager.handleReads();
     cout << "done handleReads";
-/*
+
     //manager.printReads();
 
     manager.reconstructGenome();
 
-*/
+
 
     if(readsFileOpen){
         readsFile.close();
