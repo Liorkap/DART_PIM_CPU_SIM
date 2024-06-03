@@ -70,7 +70,7 @@ int main(){
         // read results
         for(uint64_t read_it = 0; read_it < 10; read_it++){
             readFile.read(readData, 1);
-            readFile.seekg(0, std::ios::beg);
+            //readFile.seekg(0, std::ios::beg);
         }
 
     
