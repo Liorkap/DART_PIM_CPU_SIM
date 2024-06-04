@@ -267,6 +267,7 @@ Manager::Manager(CPUMinimizers CPUMins, vector<Read> reads, PIMReads results){
 }
 
 void Manager::handleReads(){
+    int numofReads = 0;
     // go over all reads
     for(Read& read : reads) {
         //PimPacket pimData(read.seq);
@@ -281,13 +282,15 @@ void Manager::handleReads(){
                 readMinimizer.refSubSeq = refSeq;
                 wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
                         &readMinimizer.mapping, false, 1, 1, 1);
-
+                numofReads++;
                 int score = readMinimizer.score;
                 if(score < 8)
                     cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
             }
+
         }
     }
+    cout << "numofReads " << numofReads;
 }
 
 

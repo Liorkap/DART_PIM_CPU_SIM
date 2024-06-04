@@ -79,7 +79,7 @@ private:
 
 
 public:
-    HashTable(int buckets = 10000) : numBuckets(buckets), size(0) {
+    HashTable(int buckets = 100000) : numBuckets(buckets), size(0) {
         table.resize(numBuckets);
     }
 
