@@ -269,10 +269,9 @@ Manager::Manager(CPUMinimizers CPUMins, vector<Read> reads, PIMReads results){
 void Manager::handleReads(){
     // go over all reads
     for(Read& read : reads) {
-        PimPacket pimData(read.seq);
+        //PimPacket pimData(read.seq);
         // go over all minimizers of a read
         for(ReadMinimizer& readMinimizer : read.minimizers){
-            bool foundMinmizer = false;
             // go over the CPU minimizers and check if this minimizer is there
             auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
             if (refMinimizer != nullptr) {
@@ -286,19 +285,7 @@ void Manager::handleReads(){
                 int score = readMinimizer.score;
                 if(score < 8)
                     cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
-
-                foundMinmizer = true;
             }
-
-            // if this minimizer is not a CPU minimizer add it to the pim packet
-            if(!foundMinmizer){
-                readMinimizer.score = -1;
-                pimData.minimizers.push_back(readMinimizer.minimizer);
-            }
-        }
-        // if some minimizers for DART-PIM are found send it to DART-PIM
-        if(pimData.minimizers.size() > 0){
-            //TODO: send the read and pim minimizers to pim if possible
         }
     }
 }
