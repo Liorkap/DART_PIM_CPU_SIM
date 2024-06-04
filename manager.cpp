@@ -1,68 +1,6 @@
 
 #include "manager.h"
 
-/*============================================= Heap ===============================================*/
-/*==================================================================================================*/
-
-void Heap::heapify(size_t index) {
-    size_t size = elements.size();
-    size_t largest = index;
-    size_t left = 2 * index + 1;
-    size_t right = 2 * index + 2;
-
-    if (left < size && (elements[left]->kmerSeq < elements[largest]->kmerSeq)) {
-        largest = left;
-    }
-
-    if (right < size && (elements[right]->kmerSeq < elements[largest]->kmerSeq)) {
-        largest = right;
-    }
-
-    if (largest != index) {
-        std::swap(elements[index], elements[largest]);
-        heapify(largest);
-    }
-}
-
-Heap::Heap(const std::vector<Kmer*>& values) : elements(values) {
-    std::make_heap(elements.begin(), elements.end(), compareMinimizers);
-}
-
-void Heap::insert(Kmer* value) {
-    elements.push_back(value);
-    size_t index = elements.size() - 1;
-
-    while (index > 0) {
-        size_t parent = (index - 1) / 2;
-        if (elements[index]->kmerSeq > elements[parent]->kmerSeq) {
-            break;
-        }
-
-        std::swap(elements[index], elements[parent]);
-        index = parent;
-    }
-    heapify(0);
-}
-
-Kmer* Heap::minElement() {
-    return elements[0];
-}
-
-bool Heap::compareMinimizers(const Kmer* a, const Kmer* b) {
-    return b->kmerSeq < a->kmerSeq;
-}
-
-/*==================================================================================================*/
-/*==================================================================================================*/
-
-
-
-
-
-
-
-
-
 /*============================================= Kmer ===============================================*/
 /*==================================================================================================*/
 
@@ -141,7 +79,6 @@ ReadResultPIM::ReadResultPIM(int readIndex, int position, int score): readIndex(
 
 
 
-
 void convertSeq2Nums(string& seq){
     for(int i = 0; i < seq.size(); i++){
         switch(seq[i]){
@@ -182,42 +119,6 @@ Read::Read(string readSeq) {
         ReadMinimizer readMinimizer(minimizer);
         this->minimizers.push_back(readMinimizer);
     }
-}
-
-std::vector<Kmer*> Read::createMinimizers(const string &seq) {
-    int i;
-    std::vector<Kmer*> heapKmers;
-    std::vector<Kmer*> kmersInOrder;
-    Kmer* minMinimizer;
-    std::vector<Kmer*> outMinimizers;
-
-    for(i = 0; (i < seq.size()) && (i < WINDOW_SIZE); i++) {
-        std::string subString = seq.substr(i, KMER_LENGTH);
-
-        minMinimizer = new Kmer(i, subString);
-        heapKmers.push_back(minMinimizer);
-        kmersInOrder.push_back(minMinimizer);
-    }
-    Heap heapMin(heapKmers);
-
-    for(; (i <= seq.size() - KMER_LENGTH + 1); i++) {
-        auto currentMin = heapMin.minElement();
-        if (outMinimizers.empty()) {
-            outMinimizers.push_back(new Kmer(currentMin->position, currentMin->kmerSeq));
-        }
-        else if(currentMin->position != outMinimizers.back()->position) {
-            outMinimizers.push_back(new Kmer(currentMin->position, currentMin->kmerSeq));
-        }
-        std::string subString = seq.substr(i, KMER_LENGTH);
-        auto newMinimizer = new Kmer(i, subString);
-        kmersInOrder.push_back(newMinimizer);
-        auto elem1 = kmersInOrder[kmersInOrder.size() - WINDOW_SIZE - 1];
-        auto iteratorToDelete = std::find(heapMin.elements.begin(), heapMin.elements.end(), elem1);
-        heapMin.elements.erase(iteratorToDelete);
-
-        heapMin.insert(newMinimizer);
-    }
-    return outMinimizers;
 }
 
 
@@ -373,43 +274,22 @@ void Manager::handleReads(){
         for(ReadMinimizer& readMinimizer : read.minimizers){
             bool foundMinmizer = false;
             // go over the CPU minimizers and check if this minimizer is there
-            for(int i = 0; i < CPUMins.size(); i++){
-                auto refMinimizer = CPUMins[i];
+            auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
+            if (refMinimizer != nullptr) {
+                string refSeq;
+                // get the sub reference segment to send to WF
+                readMinimizer.readPotentialLocation = refMinimizer->getWFSeq(readMinimizer.minimizer.position, &refSeq);
+                readMinimizer.refSubSeq = refSeq;
+                wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
+                        &readMinimizer.mapping, false, 1, 1, 1);
 
-                if(refMinimizer.minimizer.kmerSeq == readMinimizer.minimizer.kmerSeq){ // checking if its a CPU minimizer
-                    string refSeq;
-                    // get the sub reference segment to send to WF
-                    readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(readMinimizer.minimizer.position, &refSeq);
-                    readMinimizer.refSubSeq = refSeq;
-                    // if there is a slot for a new WF job, send it
-                    //if(numRunningJobs < MAX_RUNNING_JOBS){
-                    if(true) {
-                        //runningJobsMtx.lock();
-                        //numRunningJobs++;
-                        //runningJobsMtx.unlock();
-                        wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
-                                &readMinimizer.mapping, false, 1, 1, 1);
+                int score = readMinimizer.score;
+                if(score < 8)
+                    cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
 
-                        //thread WFJob(&Manager::wagnerFischerAffineGap, this, read.seq, refSeq, &readMinimizer.score,
-                        //             &readMinimizer.mapping, false, 1, 1, 1);
-
-                        //WFJob.join();
-                        int score = readMinimizer.score;
-                        if(score < 8)
-                            cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
-                    }
-                        // if not, add to pending jobs and call the pending jobs handler
-                    else{
-                        std::cout << "reached max running jobs" << endl;
-                        PendingJob currRead(read.seq, refSeq, &readMinimizer.score);
-                        pendingJobsForWF.push_back(currRead);
-                        if(pendingJobsForWF.size() == 1){
-                            handlePendingReads();
-                        }
-                    }
-                    foundMinmizer = true;
-                }
+                foundMinmizer = true;
             }
+
             // if this minimizer is not a CPU minimizer add it to the pim packet
             if(!foundMinmizer){
                 readMinimizer.score = -1;
@@ -552,7 +432,7 @@ void Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* sc
     numRunningJobs--;
     runningJobsMtx.unlock();
 }
-
+/*
 void Manager::printCPUMinimizers(){
     int i = 0;
     std::cout << "--------------Printing CPU Minimizers--------------" << endl;
@@ -563,6 +443,7 @@ void Manager::printCPUMinimizers(){
     }
     std::cout << "---------------------------------------------------" << endl;
 }
+ */
 
 void Manager::printReads(){
     int i = 0;
@@ -616,7 +497,7 @@ string buildRandomRefSegment(string minimizer){
     string end   = randomizeSeq(READ_LENGTH - KMER_LENGTH + ERROR_THRESHOLD);
     return start + minimizer + end;
 }
-
+/*
 CPUMinimizers getRandomCPUMinimizers(vector<Read> reads){
     CPUMinimizers randCPUMinimizers;
 
@@ -660,7 +541,7 @@ CPUMinimizers getRandomCPUMinimizers(vector<Read> reads){
 
     return randCPUMinimizers;
 }
-
+*/
 
 void print_help(){
     std::cout << "------------------------------------------------ HELP ------------------------------------------------------" << endl;
@@ -669,7 +550,7 @@ void print_help(){
     std::cout << "   ./DART_PIM -reads /path/to/reads/file -mins /path/to/mins/file   :   will run on cpecified reads and mins" << endl;
     std::cout << "------------------------------------------------------------------------------------------------------------" << endl;
 }
-
+/*
 void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
     string line;
     ofstream outFile("RISCV_cpu_mins_50k.txt", ios::app);
@@ -706,6 +587,7 @@ void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
         }
     }
 }
+ */
 
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     string line;
@@ -743,7 +625,7 @@ void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
         Kmer minimizer(stoi(position),kmerSeq);
         convertSeq2Nums(refSegment);
         RefGenomeMinimizer row(minimizer, refSegment);
-        CPUMins.push_back(row);
+        CPUMins.insert(row.minimizer.kmerSeq, row);
     }
 }
 
@@ -781,7 +663,7 @@ int main(int argc, char* argv[]) {
         srand(time(0));
 
         reads = getRandomReads(numOfReads);
-        CPUMins = getRandomCPUMinimizers(reads);
+        //CPUMins = getRandomCPUMinimizers(reads);
     }
     else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
         readsFile = ifstream(argv[2]);

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 # Add the executable target with debugging information and no optimization
-add_executable(DART_PIM RW_sim.cpp)
+add_executable(DART_PIM manager.cpp)
 target_compile_options(DART_PIM PRIVATE -g -O0)
 
 # Link the pthread library

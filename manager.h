@@ -26,6 +26,9 @@
 #include <mutex>
 #include <sstream>
 #include <climits>
+#include <list>
+#include <utility>
+#include <functional> // for std::hash
 
 
 using namespace std;
@@ -39,16 +42,6 @@ public:
     Kmer(const Kmer&);
 };
 
-class Heap {
-public:
-    std::vector<Kmer*> elements;
-
-    void heapify(size_t);
-    Heap(const std::vector<Kmer*>&);
-    void insert(Kmer*);
-    Kmer* minElement();
-    static bool compareMinimizers(const Kmer*, const Kmer*);
-};
 
 //This is a row in the CPU minimizers list
 class RefGenomeMinimizer {
@@ -72,11 +65,85 @@ public:
 
 };
 
+template <typename K, typename V>
+class HashTable {
+private:
+    std::vector<std::list<std::pair<K, V>>> table;
+    int numBuckets;
+    int size;
+
+    int getBucketIndex(const K& key) const {
+        std::hash<K> hashFunc;
+        return hashFunc(key) % numBuckets;
+    }
+
+
+public:
+    HashTable(int buckets = 300) : numBuckets(buckets), size(0) {
+        table.resize(numBuckets);
+    }
+
+    bool insert(const K& key, const V& value) {
+        int bucketIndex = getBucketIndex(key);
+        for (auto& pair : table[bucketIndex]) {
+            if (pair.first == key) {
+                // Key already exists, update value
+                pair.second = value;
+                return true;
+            }
+        }
+        // Key does not exist, insert new pair
+        table[bucketIndex].emplace_back(key, value);
+        size++;
+        return true;
+    }
+
+    bool remove(const K& key) {
+        int bucketIndex = getBucketIndex(key);
+        auto& bucket = table[bucketIndex];
+        for (auto it = bucket.begin(); it != bucket.end(); ++it) {
+            if (it->first == key) {
+                bucket.erase(it);
+                size--;
+                return true;
+            }
+        }
+        return false; // Key not found
+    }
+
+    bool get(const K& key, V& value) const {
+        int bucketIndex = getBucketIndex(key);
+        for (const auto& pair : table[bucketIndex]) {
+            if (pair.first == key) {
+                value = pair.second;
+                return true;
+            }
+        }
+        return false; // Key not found
+    }
+
+    int getSize() const {
+        return size;
+    }
+
+    V* find(const K& key) {
+        int bucketIndex = getBucketIndex(key);
+        for (auto& pair : table[bucketIndex]) {
+            if (pair.first == key) {
+                return &pair.second;
+            }
+        }
+        return nullptr; // Key not found
+    }
+};
+
+
 // This is the CPU minimizers list type
 typedef vector<ReadResultPIM> PIMReads;
 
 // This is the CPU minimizers list type
-typedef vector<RefGenomeMinimizer> CPUMinimizers;
+typedef HashTable<string,RefGenomeMinimizer> CPUMinimizers;
+
 
 // This is a type for a minimizer of a read
 // Eventually it will get a score and a potenatial_location in the ref genome(either from CPU or DART-PIM)
