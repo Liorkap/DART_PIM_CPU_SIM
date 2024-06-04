@@ -79,7 +79,7 @@ private:
 
 
 public:
-    HashTable(int buckets = 300) : numBuckets(buckets), size(0) {
+    HashTable(int buckets = 10000) : numBuckets(buckets), size(0) {
         table.resize(numBuckets);
     }
 
@@ -111,20 +111,6 @@ public:
         return false; // Key not found
     }
 
-    bool get(const K& key, V& value) const {
-        int bucketIndex = getBucketIndex(key);
-        for (const auto& pair : table[bucketIndex]) {
-            if (pair.first == key) {
-                value = pair.second;
-                return true;
-            }
-        }
-        return false; // Key not found
-    }
-
-    int getSize() const {
-        return size;
-    }
 
     V* find(const K& key) {
         int bucketIndex = getBucketIndex(key);
