@@ -281,7 +281,7 @@ void Manager::handleReads(){
             refMinimizer.minimizer.position = 2097360991;
             //refMinimizer.refSegmentPosition = 2097360850;
             //auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
-            if (true) { //refMinimizer != nullptr
+            if (numofReads % 10000 == 0) { //refMinimizer != nullptr
                 string refSeq;
                 // get the sub reference segment to send to WF
                 readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(refMinimizer.minimizer.position, &refSeq);
