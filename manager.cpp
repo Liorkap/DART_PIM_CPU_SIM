@@ -714,7 +714,7 @@ int main(int argc, char* argv[]) {
 
     //manager.printReads();
 
-    manager.reconstructGenome();
+    //manager.reconstructGenome();
 
 
 
