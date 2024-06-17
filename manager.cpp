@@ -274,17 +274,16 @@ void Manager::handleReads(){
         // go over all minimizers of a read
         for(ReadMinimizer& readMinimizer : read.minimizers){
             // go over the CPU minimizers and check if this minimizer is there
-            string refMinimizer1 =  "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\n"
+            //string refMinimizer1 =  "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\n"
                                     "            NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN21203230131221203213102122\n"
                                     "            3132221110211132302113130110322213102132102132110113200103221012322102002022132100111320111321102121101102112121220301332";
-            RefGenomeMinimizer refMinimizer  = RefGenomeMinimizer(readMinimizer.minimizer,refMinimizer1);
-            refMinimizer.minimizer.position = 2097360991;
-            //refMinimizer.refSegmentPosition = 2097360850;
-            //auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
-            if (numofReads % 10000 == 0) { //refMinimizer != nullptr
+            //RefGenomeMinimizer refMinimizer  = RefGenomeMinimizer(readMinimizer.minimizer,refMinimizer1);
+            //refMinimizer.minimizer.position = 2097360991;
+            auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
+            if (refMinimizer != nullptr) { //refMinimizer != nullptr numofReads % 10000 == 0
                 string refSeq;
                 // get the sub reference segment to send to WF
-                readMinimizer.readPotentialLocation = refMinimizer.getWFSeq(refMinimizer.minimizer.position, &refSeq);
+                readMinimizer.readPotentialLocation = refMinimizer->getWFSeq(readMinimizer.minimizer.position, &refSeq);
                 readMinimizer.refSubSeq = refSeq;
                 wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
                         &readMinimizer.mapping, false, 1, 1, 1);
