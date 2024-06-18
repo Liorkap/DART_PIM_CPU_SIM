@@ -162,49 +162,53 @@ uint32_t phi(std::string s) {
 
 std::vector<Kmer> Read::findMinimizers(string s) {
 
-    std::map<uint32_t, std::vector<uint32_t> > minimizers;
+    std::map<uint32_t, std::vector<uint32_t>> minimizers;
     std::vector<Kmer> returnedMinimizers;
 
-    // Fill the buffer with the first w values
     std::vector<uint32_t> buffer(WINDOW_SIZE, 0);
-    for(uint32_t i = 0; i < WINDOW_SIZE; i++) buffer[i] = phi(s.substr(i, KMER_LENGTH));
+    for(uint32_t i = 0; i < WINDOW_SIZE; i++) {
+        buffer[i] = phi(s.substr(i, KMER_LENGTH));
+    }
 
     uint32_t prev_selection = UINT_MAX;
     uint32_t prev_value = UINT_MAX;
-    for(uint32_t i = 0; i < s.size() - (KMER_LENGTH - 1) - (WINDOW_SIZE - 1); i++){
+    uint32_t size = s.size();
+    uint32_t limit = size - KMER_LENGTH + 1 - WINDOW_SIZE + 1;
 
-        // Choose the k-mer with the lowest value in the buffer
+    for(uint32_t i = 0; i < limit; i++) {
         uint32_t iter = 0;
-        for(uint32_t j = 1; j < WINDOW_SIZE; j++){
-            if(buffer[j] < buffer[iter]){
+        for(uint32_t j = 1; j < WINDOW_SIZE; j++) {
+            if(buffer[j] < buffer[iter]) {
                 iter = j;
             }
         }
+
         uint32_t idx = i + ((iter) - (i % WINDOW_SIZE) + WINDOW_SIZE) % WINDOW_SIZE;
         uint32_t hash = buffer[iter];
-        if(idx != prev_selection && (i == 0 || prev_selection == i - 1 || hash < prev_value)){
+
+        if(idx != prev_selection && (i == 0 || prev_selection == i - 1 || hash < prev_value)) {
             uint32_t val = rho(s.substr(idx, KMER_LENGTH));
-            if(minimizers.find(val) == minimizers.end()) minimizers[val] = std::vector<uint32_t>();
             minimizers[val].push_back(idx);
 
             prev_selection = idx;
             prev_value = hash;
         }
 
-        buffer[i % WINDOW_SIZE] = phi(s.substr(i + WINDOW_SIZE, KMER_LENGTH));
-
+        if (i + WINDOW_SIZE < size - KMER_LENGTH + 1) {
+            buffer[i % WINDOW_SIZE] = phi(s.substr(i + WINDOW_SIZE, KMER_LENGTH));
+        }
     }
-    // convert map of minimizers to vector
-    for (const auto& pair : minimizers) {
+
+    for (const auto &pair : minimizers) {
         uint32_t minSeq = pair.first;
         const std::vector<uint32_t> &locations = pair.second;
-        for (const uint32_t& minLocation : locations){
-            Kmer kmer((int)(minLocation), to_string(minSeq));
+        for (const uint32_t &minLocation : locations) {
+            Kmer kmer((int)(minLocation), std::to_string(minSeq));
             returnedMinimizers.push_back(kmer);
         }
     }
-    return returnedMinimizers;
 
+    return returnedMinimizers;
 }
 
 void Read::print(){
@@ -681,16 +685,30 @@ int main(int argc, char* argv[]) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
-
+        auto start1 = std::chrono::high_resolution_clock::now();
         getReadsFromFile(readsFile, reads);
-        cout << "done getReadsFromFile";
+        auto end1 = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> duration1 = end1 - start1;
+
+
+        cout << "done getReadsFromFile ***************************** " << duration1.count() << endl;
+        auto start2 = std::chrono::high_resolution_clock::now();
+
 
         getCPUMinsFromFile(minsFile, CPUMins);
-        cout << "done getCPUMinsFromFile";
+        auto end2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration2 = end2 - start2;
 
+        cout << "done getCPUMinsFromFile " << duration2.count() << endl;
+
+        auto start3 = std::chrono::high_resolution_clock::now();
 
         getReadsMapFromFile(pimResultFile, PIMResults);
-        cout << "done getReadsMapFromFile";
+        auto end3 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration3 = end3 - start3;
+
+        cout << "done getReadsMapFromFile "<< duration3.count() << endl;
 
 
     }
@@ -704,13 +722,21 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    auto start3 = std::chrono::high_resolution_clock::now();
 
     Manager manager(CPUMins, reads, PIMResults);
+    auto end3 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration3 = end3 - start3;
+    cout << "done manager "<< duration3.count() << endl;
 
     //manager.printCPUMinimizers();
+    auto start4 = std::chrono::high_resolution_clock::now();
 
     manager.handleReads();
-    cout << "done handleReads";
+    auto end4 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration4 = end4 - start4;
+
+    cout << "done handleReads " << duration4.count() << endl;
 
     //manager.printReads();
 
