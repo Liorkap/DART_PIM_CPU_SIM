@@ -1,4 +1,4 @@
-This project is a RISC-V CPU simulation implemented by Lior Kaplun and Idan Magram htat simulates:
+This project is a RISC-V CPU simulation implemented by Lior Kaplun and Idan Magram which simulates:
 
 Wanger Fischer simulation:
     simulates calculation of 1000 WF of a read and sub-reference segment on a RISC-V simulation environment (Gem5)
