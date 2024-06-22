@@ -13,10 +13,6 @@ Kmer::Kmer(const Kmer &kmer): position(kmer.position), kmerSeq(kmer.kmerSeq) {}
 
 
 
-
-
-
-
 /*======================================= RefGenomeMinimizer =======================================*/
 /*==================================================================================================*/
 
@@ -231,30 +227,12 @@ void Read::print(){
 
 
 
-
-/*========================================== PendingJob ============================================*/
-/*==================================================================================================*/
-
-PendingJob::PendingJob(string readSeq, string refSeq, int* score) : readSeq(readSeq), refSeq(refSeq), score(score) {}
-
 /*==================================================================================================*/
 /*==================================================================================================*/
 
 
-
-
-
-
-/*========================================== PimPacket =============================================*/
-/*==================================================================================================*/
-
-PimPacket::PimPacket(string readSeq) : readSeq(readSeq) {}
-
 /*==================================================================================================*/
 /*==================================================================================================*/
-
-
-
 
 
 
@@ -274,17 +252,12 @@ void Manager::handleReads(){
     int numofReads = 0;
     // go over all reads
     for(Read& read : reads) {
-        //PimPacket pimData(read.seq);
         // go over all minimizers of a read
         for(ReadMinimizer& readMinimizer : read.minimizers){
             // go over the CPU minimizers and check if this minimizer is there
-            //string refMinimizer1 =  "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\n"
-                                    "            NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN21203230131221203213102122\n"
-                                    "            3132221110211132302113130110322213102132102132110113200103221012322102002022132100111320111321102121101102112121220301332";
-            //RefGenomeMinimizer refMinimizer  = RefGenomeMinimizer(readMinimizer.minimizer,refMinimizer1);
-            //refMinimizer.minimizer.position = 2097360991;
+
             auto refMinimizer = CPUMins.find(readMinimizer.minimizer.kmerSeq);
-            if (refMinimizer != nullptr) { //refMinimizer != nullptr numofReads % 10000 == 0
+            if (refMinimizer != nullptr) {
                 string refSeq;
                 // get the sub reference segment to send to WF
                 readMinimizer.readPotentialLocation = refMinimizer->getWFSeq(readMinimizer.minimizer.position, &refSeq);
@@ -292,37 +265,12 @@ void Manager::handleReads(){
                 wagnerFischerAffineGap(read.seq, refSeq, &readMinimizer.score,
                         &readMinimizer.mapping, false, 1, 1, 1);
                 numofReads++;
-                int score = readMinimizer.score;
-                if(score < 8)
-                    cout << " read.seq: "  << read.seq << " refSeq: " << refSeq << " score: " << score << endl;
             }
 
         }
     }
-    cout << "numofReads " << numofReads;
 }
 
-
-void Manager::handlePendingReads(){
-    // while we have pending WF jobs
-    string readMapping = "";
-    while(pendingJobsForWF.size() > 0){
-        //check if there is a free slot to run a job
-        if(numRunningJobs < MAX_RUNNING_JOBS){
-            // get the next job
-            PendingJob nextRead = pendingJobsForWF.front();
-            pendingJobsForWF.pop_front();
-
-            runningJobsMtx.lock();
-            numRunningJobs++;
-            runningJobsMtx.unlock();
-
-            thread WFJob(&Manager::wagnerFischerAffineGap, this, nextRead.readSeq,  nextRead.refSeq, nextRead.score,
-                         &readMapping, false, 1, 1, 1);
-            WFJob.detach();
-        }
-    }
-}
 
 void Manager::reconstructGenome() {
     int minScore = REF_SUB_SEQUENCE_LENGTH;
@@ -431,18 +379,7 @@ void Manager::wagnerFischerAffineGap(const string& S1, const string& S2, int* sc
     numRunningJobs--;
     runningJobsMtx.unlock();
 }
-/*
-void Manager::printCPUMinimizers(){
-    int i = 0;
-    std::cout << "--------------Printing CPU Minimizers--------------" << endl;
-    for(RefGenomeMinimizer CPUMin : CPUMins){
-        std::cout << "CPU Minimizer " << i << ":" << endl;
-        CPUMin.print();
-        i++;
-    }
-    std::cout << "---------------------------------------------------" << endl;
-}
- */
+
 
 void Manager::printReads(){
     int i = 0;
@@ -468,80 +405,6 @@ void Manager::printReads(){
 /*============================================= Main ===============================================*/
 /*==================================================================================================*/
 
-string randomizeSeq(int len){
-
-    // String to store the random characters
-    string result;
-
-    // Generate random characters and append them to the string
-    for (int i = 0; i < len; ++i) {
-        char randomChar = '0' + (rand() % 4); // Random character between '0' and '3'
-        result.push_back(randomChar);
-    }
-
-    return result;
-}
-
-vector<Read> getRandomReads(int numOfReads){
-    vector<Read> reads;
-    for(int i = 0 ; i < numOfReads; i++){
-        Read read(randomizeSeq(READ_LENGTH));
-        reads.push_back(read);
-    }
-    return reads;
-}
-
-string buildRandomRefSegment(string minimizer){
-    string start = randomizeSeq(READ_LENGTH - KMER_LENGTH + ERROR_THRESHOLD);
-    string end   = randomizeSeq(READ_LENGTH - KMER_LENGTH + ERROR_THRESHOLD);
-    return start + minimizer + end;
-}
-/*
-CPUMinimizers getRandomCPUMinimizers(vector<Read> reads){
-    CPUMinimizers randCPUMinimizers;
-
-
-    // Generate a random number of reads to select
-    int numReads = rand() % reads.size() +1;
-    //std::cout << "num reads = " << numReads << endl;
-
-    // Shuffle the indices to select minimizers randomly
-    vector<int> readsIndices(reads.size());
-    for(int i = 0; i < readsIndices.size(); i++){
-        readsIndices[i] = i;
-    }
-    random_shuffle(readsIndices.begin(), readsIndices.end());
-
-    for(int i = 0; i < numReads; i++){
-        vector<ReadMinimizer> minimizers = reads[readsIndices[i]].minimizers;
-        //std::cout << "chosen read = " << reads[readsIndices[i]].seq << endl;
-        // Generate a random number of minimizers to select
-        int numMinimizers = rand() % minimizers.size() +1; // Random number between 0 and minimizers.size()
-        //std::cout << "num mins = " << numMinimizers << endl;
-
-        // Shuffle the indices to select minimizers randomly
-        vector<int> indices(minimizers.size());
-        for (size_t i = 0; i < indices.size(); i++) {
-            indices[i] = i;
-        }
-        random_shuffle(indices.begin(), indices.end());
-
-        // Select random elements from the original vector based on the shuffled indices
-        for (int i = 0; i < numMinimizers; i++) {
-            string refSeg = buildRandomRefSegment(minimizers[indices[i]].minimizer.kmerSeq);
-            Kmer readMinimizer = minimizers[indices[i]].minimizer;
-            int refGenomeMinimizerMinLocation = READ_LENGTH - KMER_LENGTH + ERROR_THRESHOLD;
-            int refGenomeMinimizerMaxLocation = REF_GENOME_LENGTH - (READ_LENGTH + ERROR_THRESHOLD);
-            readMinimizer.position = refGenomeMinimizerMinLocation + rand() % (refGenomeMinimizerMaxLocation - refGenomeMinimizerMinLocation + 1);
-            RefGenomeMinimizer refMinimizer(readMinimizer, refSeg);
-            randCPUMinimizers.push_back(refMinimizer);
-        }
-    }
-
-    return randCPUMinimizers;
-}
-*/
-
 void print_help(){
     std::cout << "------------------------------------------------ HELP ------------------------------------------------------" << endl;
     std::cout << "Two running modes:" << endl;
@@ -549,45 +412,13 @@ void print_help(){
     std::cout << "   ./DART_PIM -reads /path/to/reads/file -mins /path/to/mins/file   :   will run on cpecified reads and mins" << endl;
     std::cout << "------------------------------------------------------------------------------------------------------------" << endl;
 }
-/*
-void reduceMinmizers(ifstream& readsFile, CPUMinimizers CPUMins){
-    string line;
-    ofstream outFile("RISCV_cpu_mins_50k.txt", ios::app);
-    readsFile.clear();                 // Clear the EOF flag
-    readsFile.seekg(0, ios::beg);      // Move the file pointer to the beginning
-    //skip first line
-    if(!getline(readsFile, line)){
-        std::cout << "MSG: Reads file is empty." << line << endl;
-        return;
-    }
-    while(getline(readsFile, line)){
-        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
-        Read read(line);
-        for(ReadMinimizer& readMinimizer : read.minimizers) {
-            bool foundMinmizer = false;
-            // go over the CPU minimizers and check if this minimizer is there
-            for (int i = 0; i < CPUMins.size(); i++) {
-                auto refMinimizer = CPUMins[i];
 
-                if (refMinimizer.minimizer.kmerSeq ==
-                    readMinimizer.minimizer.kmerSeq) { // checking if its a CPU minimizer
-                    outFile << refMinimizer.minimizer.kmerSeq << ", " << refMinimizer.refSegmentPosition  << ", "
-                            << refMinimizer.refSegment << std::endl;
-
-                }
-            }
-        }
-
-        //skip two lines
-        for(int i = 0; i < 3; i++){
-            if(!getline(readsFile, line)){
-                break;
-            }
-        }
-    }
-}
+/**
+ * parsing file in which contains reads
+ * @param readsFile reads above (A, C, G, T)
+ * @param reads vector of reads that contain the reads from the file
+ * @return void
  */
-
 void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     string line;
     //skip first line
@@ -596,7 +427,6 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
         return;
     }
     while(getline(readsFile, line)){
-        //convertSeq2Nums(line), The conversion is after find_minimizers because the function gets read of letters
         Read read(line);
         reads.push_back(read);
 
@@ -609,6 +439,13 @@ void getReadsFromFile(ifstream& readsFile, vector<Read>& reads){
     }
 }
 
+/**
+ * parsing file in which contains minimizers that the CPU is responsible,
+ * their position in the reference genome and reference segment
+ * @param minsFile minimizers above (A, C, G, T)
+ * @param CPUMins vector of minimizers that the CPU is responsible
+ * @return void
+ */
 void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
     string line;
     string refSegment;
@@ -628,6 +465,12 @@ void getCPUMinsFromFile(ifstream& minsFile, CPUMinimizers& CPUMins) {
     }
 }
 
+/**
+ * parsing file in which contains the read results that PIM calculated
+ * @param minsFile readsMapFile
+ * @param CPUMins vector of PIM results
+ * @return void
+ */
 void getReadsMapFromFile(ifstream& readsMapFile, PIMReads& PIMResults) {
     string line;
     string readIndex;
@@ -658,13 +501,7 @@ int main(int argc, char* argv[]) {
     bool pimFileOpen = false;
     int numOfReads = 100; //relevant to the rand running option
 
-    if(argc == 2 && string(argv[1]) == "-rand"){
-        srand(time(0));
-
-        reads = getRandomReads(numOfReads);
-        //CPUMins = getRandomCPUMinimizers(reads);
-    }
-    else if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
+    if(argc == 7 && string(argv[1]) == "-reads" && string(argv[3]) == "-mins" && string(argv[5]) == "-pim") {
         readsFile = ifstream(argv[2]);
         readsFileOpen = readsFile.is_open();
         if (!readsFileOpen) {
@@ -685,31 +522,11 @@ int main(int argc, char* argv[]) {
             std::cout << "ERROR: Can't open file " << string(argv[6]) << endl;
             return 1;
         }
-        auto start1 = std::chrono::high_resolution_clock::now();
         getReadsFromFile(readsFile, reads);
-        auto end1 = std::chrono::high_resolution_clock::now();
-
-        std::chrono::duration<double> duration1 = end1 - start1;
-
-
-        cout << "done getReadsFromFile ***************************** " << duration1.count() << endl;
-        auto start2 = std::chrono::high_resolution_clock::now();
-
 
         getCPUMinsFromFile(minsFile, CPUMins);
-        auto end2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> duration2 = end2 - start2;
-
-        cout << "done getCPUMinsFromFile " << duration2.count() << endl;
-
-        auto start3 = std::chrono::high_resolution_clock::now();
 
         getReadsMapFromFile(pimResultFile, PIMResults);
-        auto end3 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> duration3 = end3 - start3;
-
-        cout << "done getReadsMapFromFile "<< duration3.count() << endl;
-
 
     }
     else if(argc == 2 && string(argv[1]) == "-help"){
@@ -722,25 +539,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto start3 = std::chrono::high_resolution_clock::now();
 
     Manager manager(CPUMins, reads, PIMResults);
-    auto end3 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration3 = end3 - start3;
-    cout << "done manager "<< duration3.count() << endl;
-
-    //manager.printCPUMinimizers();
-    auto start4 = std::chrono::high_resolution_clock::now();
 
     manager.handleReads();
-    auto end4 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration4 = end4 - start4;
-
-    cout << "done handleReads " << duration4.count() << endl;
 
     //manager.printReads();
 
-    //manager.reconstructGenome();
+    manager.reconstructGenome();
 
 
 

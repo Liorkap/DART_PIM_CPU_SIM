@@ -1,0 +1,24 @@
+Wanger Fischer simulation:
+    simulates calculation of 1000 WF of a read and sub-reference segment on a RISC-V simulation environment (Gem5)
+    to run:
+        1. riscv64-unknown-linux-gnu-g++ -std=c++17 -O3 WF_sim.cpp -static -o WF_sim
+        2. cd to gem5 wd and run sudo build/riscv/gem5.opt --outdir=out_results multicore_with_1L2_0L3_simple.py
+           --binary WF_sim
+        3. The results will be shown at out_results/stats.txt
+        4. divide by 1000 the simulation time for the time of one WF
+
+manager simulation:
+    There is a predefined list with minimizers the CPU is responsible for.
+    Will find minimizers of each read.
+    Calculate the read’s potential location of the minimizers from the list. (using WF)
+    Send the other minimizers and the read to the DART-PIM and receive back the results.
+    Decide which is the best candidate over all results
+    Reconstruct the Genome
+
+    to run:
+        1. riscv64-unknown-linux-gnu-g++ -std=c++17 -O3 manager.cpp -static -o manager
+        2. cd to gem5 wd and run  sudo build/riscv/gem5.opt --outdir=simple_ou
+           multicore_with_1L2_0L3.py --binary wd/manager
+           --args "-reads wd/reads_R1_25.fastq  -mins wd/riscv_cpu_mins.txt
+           -pim wd/readsMappings_090524.txt"
+        3. The results will be shown at out_results/stats.txt

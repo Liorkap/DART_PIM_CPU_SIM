@@ -37,6 +37,7 @@
 
 using namespace std;
 
+// This is class that represent Kmer and its position in the genome
 class Kmer {
 public:
     int position;
@@ -69,6 +70,7 @@ public:
 
 };
 
+// Hash table class that will contain the minimizers the cpu is responsible
 template <typename K, typename V>
 class HashTable {
 private:
@@ -140,10 +142,10 @@ typedef HashTable<string,RefGenomeMinimizer> CPUMinimizers;
 class ReadMinimizer{
 public:
     Kmer minimizer; // Position is relative to the read. 
-    int score;
-    int readPotentialLocation;
-    string refSubSeq;
-    string mapping;
+    int score;      // WF score
+    int readPotentialLocation; // potential location of the read in the genome
+    string refSubSeq;          // reference sub-sequence of the minimizer
+    string mapping;            // mapping result from the WF
 
     ReadMinimizer(Kmer);
     void print();
@@ -157,29 +159,13 @@ public:
     int                   location;  // This is the actual result (location in the whole refrence genome).
 
     Read(string);
-    vector<Kmer*> createMinimizers(const string &seq);
+    /**
+    * find the minimizers of the read
+    * @param s read above (A, C, G, T)
+    * @return hash
+    */
     std::vector<Kmer> findMinimizers(string s);
     void print();
-};
-
-// This is a type for a WF job that couldn't be scheduled because max number of threads were running.
-// We store here the relevant data and schedule the job later when possible.
-class PendingJob{
-public:
-    string readSeq;
-    string refSeq;
-    int*   score;
-
-    PendingJob(string, string, int*);
-};
-
-// This is a type for the packet sent to the DART-PIM for calculation.
-class PimPacket{
-public:
-    string       readSeq;
-    vector<Kmer> minimizers;
-
-    PimPacket(string);
 };
 
 
@@ -189,7 +175,6 @@ public:
 
     CPUMinimizers       CPUMins; // List of cpu minimizers
     vector<Read>        reads; // Reads to handle
-    deque<PendingJob>   pendingJobsForWF; // These are the pending WF jobs that couldn't be scheduled and will be scheduled when possible. (too many parallel threads)
     int                 numRunningJobs; // Holds the current number of WF running threads
     mutex               runningJobsMtx; // The WF function reduces the number of running threads when its done. This is a shared variable across all WF jobs, protecting it with mutex.
     string              genome;         // the reconstructed genome
@@ -197,10 +182,25 @@ public:
 
 
     Manager(CPUMinimizers, vector<Read>, PIMReads results);
-    void handleReads(); // handling the reads
-    void handlePendingReads(); // handling the pending WF jobs
+
+    /**
+     * loop over the reads, for minimizers that the CPU is responsible: calculate WF of the
+     * read and corresponding sub reference segment
+     * @return void
+     */
+    void handleReads();
+    /**
+     * calculate Wanger Fischer affine gap algorithm for two strings and saves the score and the mapping
+     * @return int - score
+     */
     void wagnerFischerAffineGap(const string& S1, const string& S2, int* score, string* readMapping, bool backtracking, int wop=1, int wex=1, int wsub=1);
+    /**
+     * loop over the reads, and for each read check the minimizer with the lowest score.
+     * the location of the read in the genome is the location of the sub reference segment
+     * @return void
+     */
     void reconstructGenome();
+
     void printReads();
     void printCPUMinimizers();
 };
